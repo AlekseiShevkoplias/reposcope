@@ -1,9 +1,13 @@
 import pytest
 import os
+import logging
 from pathlib import Path
 import tempfile
 import shutil
 from reposcope.core import RepoScope
+from reposcope.cli import main
+import sys
+from unittest.mock import patch
 
 @pytest.fixture
 def temp_repo():
@@ -171,3 +175,119 @@ def test_empty_patterns(temp_repo):
     scope.use_include_patterns([])
     files2 = set(scope.collect_files())
     assert len(files2) == 0
+
+def test_cli_short_arguments(temp_repo, capsys):
+    """Test CLI with short argument versions."""
+    # Save current working directory
+    original_cwd = os.getcwd()
+    try:
+        # Change to temp_repo directory for tests
+        os.chdir(temp_repo)
+
+        # Test -g (--use-gitignore)
+        with patch.object(sys, 'argv', ['reposcope', '-g']):
+            main()
+            captured = capsys.readouterr()
+            assert "Generated context file: context.txt" in captured.out
+
+        # Test -i (--include)
+        with patch.object(sys, 'argv', ['reposcope', '-i', '*.py']):
+            main()
+            captured = capsys.readouterr()
+            assert "Generated context file: context.txt" in captured.out
+
+        # Test -o (--output)
+        output_file = "test_output.txt"
+        with patch.object(sys, 'argv', ['reposcope', '-g', '-o', output_file]):
+            main()
+            captured = capsys.readouterr()
+            assert f"Generated context file: {output_file}" in captured.out
+            assert os.path.exists(output_file)
+
+        # Test -v (--verbose)
+        with patch.object(sys, 'argv', ['reposcope', '-g', '-v']):
+            main()
+            captured = capsys.readouterr()
+            assert "DEBUG" in captured.err  # Check for debug output in stderr
+
+        # Test -d (--dir)
+        with patch.object(sys, 'argv', ['reposcope', '-d', str(temp_repo), '-g']):
+            main()
+            captured = capsys.readouterr()
+            assert "Generated context file: context.txt" in captured.out
+
+        # Test -X (--exclude-file/--ignore-file)
+        ignore_file = temp_repo / "custom_ignore.txt"
+        ignore_file.write_text("*.pyc")
+        with patch.object(sys, 'argv', ['reposcope', '-X', str(ignore_file)]):
+            main()
+            captured = capsys.readouterr()
+            assert "Generated context file: context.txt" in captured.out
+
+        # Test -x (--exclude/--ignore)
+        with patch.object(sys, 'argv', ['reposcope', '-x', '*.pyc', '*.pyo']):
+            main()
+            captured = capsys.readouterr()
+            assert "Generated context file: context.txt" in captured.out
+
+        # Test -I (--include-file)
+        include_file = temp_repo / "include.txt"
+        include_file.write_text("*.py")
+        with patch.object(sys, 'argv', ['reposcope', '-I', str(include_file)]):
+            main()
+            captured = capsys.readouterr()
+            assert "Generated context file: context.txt" in captured.out
+
+    finally:
+        # Restore original working directory
+        os.chdir(original_cwd)
+
+def test_cli_aliases(temp_repo, capsys):
+    """Test command line argument aliases."""
+    original_cwd = os.getcwd()
+    try:
+        os.chdir(temp_repo)
+
+        # Test --exclude alias for --ignore
+        with patch.object(sys, 'argv', ['reposcope', '--exclude', '*.pyc']):
+            main()
+            captured = capsys.readouterr()
+            assert "Generated context file: context.txt" in captured.out
+
+        # Test --exclude-file alias for --ignore-file
+        ignore_file = temp_repo / "custom_ignore.txt"
+        ignore_file.write_text("*.pyc")
+        with patch.object(sys, 'argv', ['reposcope', '--exclude-file', str(ignore_file)]):
+            main()
+            captured = capsys.readouterr()
+            assert "Generated context file: context.txt" in captured.out
+
+    finally:
+        os.chdir(original_cwd)
+
+def test_cli_mixed_arguments(temp_repo, capsys):
+    """Test mixing different argument versions."""
+    original_cwd = os.getcwd()
+    try:
+        os.chdir(temp_repo)
+
+        # Mix short and long arguments
+        with patch.object(sys, 'argv', ['reposcope', '-g', '--output', 'out.txt']):
+            main()
+            captured = capsys.readouterr()
+            assert "Generated context file: out.txt" in captured.out
+
+        # Mix exclude and ignore
+        with patch.object(sys, 'argv', ['reposcope', '--exclude', '*.pyc', '--ignore', '*.pyo']):
+            main()
+            captured = capsys.readouterr()
+            assert "Generated context file: context.txt" in captured.out
+
+        # Mix verbose with different argument styles
+        with patch.object(sys, 'argv', ['reposcope', '--use-gitignore', '-v']):
+            main()
+            captured = capsys.readouterr()
+            assert "DEBUG" in captured.err
+
+    finally:
+        os.chdir(original_cwd)

@@ -6,24 +6,40 @@ from reposcope.core import RepoScope
 
 def setup_logging(verbose: bool):
     """Configure logging based on verbosity level."""
+    # Remove any existing handlers to ensure clean setup
+    root = logging.getLogger()
+    if root.handlers:
+        for handler in root.handlers:
+            root.removeHandler(handler)
+            
     level = logging.DEBUG if verbose else logging.WARNING
-    logging.basicConfig(
-        level=level,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        datefmt='%H:%M:%S'
-    )
+    
+    # Configure handler for stderr
+    handler = logging.StreamHandler(sys.stderr)
+    handler.setLevel(level)
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
+    handler.setFormatter(formatter)
+    
+    # Setup root logger
+    root.setLevel(level)
+    root.addHandler(handler)
+    
+    # Ensure propagation for our module's logger
+    logger = logging.getLogger(__name__)
+    logger.setLevel(level)
+    logger.propagate = True
 
 def main():
     parser = argparse.ArgumentParser(
         description="RepoScope - Generate repository context files for LLMs"
     )
     parser.add_argument(
-        "--dir", 
+        "-d", "--dir", 
         default=".",
         help="Root directory of the repository (default: current directory)"
     )
     parser.add_argument(
-        "--output",
+        "-o", "--output",
         default="context.txt",
         help="Output file path (default: context.txt)"
     )
@@ -36,30 +52,32 @@ def main():
     # Ignore-based selection options
     ignore_group = parser.add_argument_group('Ignore-based selection')
     ignore_group.add_argument(
-        "--use-gitignore",
+        "-g", "--use-gitignore",
         action="store_true",
         help="Use patterns from .gitignore file"
     )
     ignore_group.add_argument(
-        "--ignore-file",
-        help="Use patterns from specified ignore file"
+        "-x", "--ignore", "--exclude",
+        dest="ignore",
+        nargs="*",
+        help="Specify patterns to exclude"
     )
     ignore_group.add_argument(
-        "--ignore",
-        nargs="*",
-        help="Specify ignore patterns directly"
+        "-X", "--ignore-file", "--exclude-file",
+        dest="ignore_file",
+        help="Use patterns from specified exclude file"
     )
 
     # Include-based selection options
     include_group = parser.add_argument_group('Include-based selection')
     include_group.add_argument(
-        "--include-file",
-        help="Use patterns from specified include file"
+        "-i", "--include",
+        nargs="*",
+        help="Specify patterns to include"
     )
     include_group.add_argument(
-        "--include",
-        nargs="*",
-        help="Specify include patterns directly"
+        "-I", "--include-file",
+        help="Use patterns from specified include file"
     )
 
     args = parser.parse_args()
@@ -67,6 +85,10 @@ def main():
     # Setup logging
     setup_logging(args.verbose)
     logger = logging.getLogger(__name__)
+    
+    # Log startup info in verbose mode
+    logger.debug("RepoScope starting up")
+    logger.debug(f"Arguments: {args}")
 
     # Check for mixing of modes
     has_include = bool(args.include_file or args.include)
@@ -77,23 +99,30 @@ def main():
 
     # Create RepoScope instance
     try:
+        logger.debug(f"Initializing RepoScope with directory: {args.dir}")
         scope = RepoScope(args.dir)
 
         # Check if we're in include mode
         if has_include:
             if args.include_file:
+                logger.debug(f"Using include file: {args.include_file}")
                 scope.use_include_file(args.include_file)
             if args.include:
+                logger.debug(f"Using include patterns: {args.include}")
                 scope.use_include_patterns(args.include)
         else:
             # Ignore mode - apply specified ignore patterns
             if args.use_gitignore:
+                logger.debug("Using .gitignore patterns")
                 scope.use_gitignore()
             if args.ignore_file:
+                logger.debug(f"Using ignore file: {args.ignore_file}")
                 scope.use_ignore_file(args.ignore_file)
             if args.ignore:
+                logger.debug(f"Using ignore patterns: {args.ignore}")
                 scope.use_ignore_patterns(args.ignore)
 
+        logger.debug(f"Generating context file: {args.output}")
         scope.generate_context_file(args.output)
         print(f"Generated context file: {args.output}")
         

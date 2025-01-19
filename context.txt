@@ -1,0 +1,795 @@
+Repository: reposcope
+
+File Tree:
+└── .github/workflows/python-package.yml
+└── .gitignore
+└── LICENSE
+└── README.md
+└── context.txt
+└── pyproject.toml
+└── src/reposcope/__init__.py
+└── src/reposcope/__main__.py
+└── src/reposcope/cli.py
+└── src/reposcope/core.py
+└── tests/test_reposcope.py
+
+File Contents:
+
+--- .github/workflows/python-package.yml ---
+name: Python package
+
+on:
+  push:
+    branches: [ "main" ]
+    tags: [ "v*" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+        
+    - name: Run tests
+      run: |
+        pytest
+
+  publish:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+    permissions:
+      id-token: write
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.10"
+        
+    - name: Build package
+      run: |
+        python -m pip install --upgrade pip
+        pip install build
+        python -m build
+        
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+
+--- .gitignore ---
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+.pytest_cache
+
+# Virtual environments
+.venv
+
+# Git
+.git
+
+
+--- LICENSE ---
+MIT License
+Copyright (c) 2025 Aleksei Shevkoplias
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+--- README.md ---
+# RepoScope 🔍
+
+A tiny tool that dumps your repo files into a single document for easy sharing with AI assistants. Made because I was tired of copy-pasting files one by one into ChatGPT chats.
+
+## Requirements
+- Linux only (Windows and macOS not supported yet)
+- Python >= 3.9
+
+## Install
+```bash
+pip install reposcope
+```
+
+## Usage
+
+Run in your project directory:
+```bash
+# Respect .gitignore (what you want most of the time)
+reposcope --use-gitignore
+
+# Or pick specific files
+reposcope --include "*.py" "src/*.js"
+```
+
+You'll get `context.txt` with your files.
+
+## How it Works
+
+Two modes to use:
+
+### 1. Ignore Mode
+
+Skip some files:
+```bash
+# Use .gitignore
+reposcope --use-gitignore
+
+# Use custom ignore file
+reposcope --ignore-file my_ignores.txt
+
+# Ignore directly
+reposcope --ignore "*.log" "temp/*"
+
+# Mix them
+reposcope --use-gitignore --ignore "*.log" --ignore-file custom_ignore.txt
+```
+
+### 2. Include Mode
+
+Pick specific files:
+```bash
+# By pattern
+reposcope --include "*.py" "src/*.js"
+
+# From file
+reposcope --include-file include.txt
+```
+
+### Patterns
+
+Work like in .gitignore:
+```
+*.py            # Python files
+src/*.js        # JS in src directory
+docs/**/*.md    # markdown in docs and subdirs
+node_modules/   # entire directory
+config.json     # specific file
+```
+
+### Extra Options
+
+```bash
+# Change output name
+reposcope --output something.txt
+
+# Different directory
+reposcope --dir ../other-project
+
+# See what's happening
+reposcope --use-gitignore --verbose
+```
+
+## Output Example
+
+You get a text file like this:
+```
+Repository: my-project
+
+File Tree:
+└── src/main.py
+└── docs/README.md
+└── config.json
+
+File Contents:
+
+--- src/main.py ---
+[content here]
+
+--- docs/README.md ---
+[content here]
+
+--- config.json ---
+[content here]
+```
+
+## Tips
+
+1. Start with `--use-gitignore` - probably what you want
+2. If getting too much stuff, pick what you need:
+   ```bash
+   reposcope --include "src/*.py" "*.md"
+   ```
+3. Keep patterns in files for different tasks:
+   ```bash
+   # frontend.txt
+   src/components/*.jsx
+   src/styles/*.css
+   ```
+   Then:
+   ```bash
+   reposcope --include-file frontend.txt
+   ```
+
+## License
+
+MIT - do whatever
+
+## Contributing
+
+Small tool but if you spot bugs or have ideas, open an issue.
+
+--- context.txt ---
+
+
+--- pyproject.toml ---
+[project]
+name = "reposcope"
+version = "0.1.3"
+description = "Collect repository files into a single document for easy sharing with AI assistants"
+readme = "README.md"
+authors = [
+    { name = "AlekseiShevkoplias", email = "shevshelles@gmail.com" }
+]
+requires-python = ">=3.9"
+dependencies = []
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux", 
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+[project.scripts]
+reposcope = "reposcope.__main__:run_main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.4",
+    "pytest-cov>=6.0.0",
+]
+
+
+--- src/reposcope/__init__.py ---
+"""RepoScope - Repository content collector for LLM context."""
+
+__version__ = "0.1.3"
+
+from reposcope.core import RepoScope
+
+__all__ = ["RepoScope"]
+
+--- src/reposcope/__main__.py ---
+"""Entry point for the reposcope command."""
+
+from reposcope.cli import main
+
+if __name__ == "__main__":
+    main()
+
+# This is needed for the entry point
+def run_main():
+    main()
+
+--- src/reposcope/cli.py ---
+#!/usr/bin/env python3
+import argparse
+import logging
+import sys
+from reposcope.core import RepoScope
+
+def setup_logging(verbose: bool):
+    """Configure logging based on verbosity level."""
+    level = logging.DEBUG if verbose else logging.WARNING
+    logging.basicConfig(
+        level=level,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        datefmt='%H:%M:%S'
+    )
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="RepoScope - Generate repository context files for LLMs"
+    )
+    parser.add_argument(
+        "--dir", 
+        default=".",
+        help="Root directory of the repository (default: current directory)"
+    )
+    parser.add_argument(
+        "--output",
+        default="context.txt",
+        help="Output file path (default: context.txt)"
+    )
+    parser.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable verbose output"
+    )
+
+    # Ignore-based selection options
+    ignore_group = parser.add_argument_group('Ignore-based selection')
+    ignore_group.add_argument(
+        "--use-gitignore",
+        action="store_true",
+        help="Use patterns from .gitignore file"
+    )
+    ignore_group.add_argument(
+        "--ignore-file",
+        help="Use patterns from specified ignore file"
+    )
+    ignore_group.add_argument(
+        "--ignore",
+        nargs="*",
+        help="Specify ignore patterns directly"
+    )
+
+    # Include-based selection options
+    include_group = parser.add_argument_group('Include-based selection')
+    include_group.add_argument(
+        "--include-file",
+        help="Use patterns from specified include file"
+    )
+    include_group.add_argument(
+        "--include",
+        nargs="*",
+        help="Specify include patterns directly"
+    )
+
+    args = parser.parse_args()
+    
+    # Setup logging
+    setup_logging(args.verbose)
+    logger = logging.getLogger(__name__)
+
+    # Check for mixing of modes
+    has_include = bool(args.include_file or args.include)
+    has_ignore = bool(args.use_gitignore or args.ignore_file or args.ignore)
+    
+    if has_include and has_ignore:
+        logger.warning("Both ignore and include options specified. Include patterns will take precedence.")
+
+    # Create RepoScope instance
+    try:
+        scope = RepoScope(args.dir)
+
+        # Check if we're in include mode
+        if has_include:
+            if args.include_file:
+                scope.use_include_file(args.include_file)
+            if args.include:
+                scope.use_include_patterns(args.include)
+        else:
+            # Ignore mode - apply specified ignore patterns
+            if args.use_gitignore:
+                scope.use_gitignore()
+            if args.ignore_file:
+                scope.use_ignore_file(args.ignore_file)
+            if args.ignore:
+                scope.use_ignore_patterns(args.ignore)
+
+        scope.generate_context_file(args.output)
+        print(f"Generated context file: {args.output}")
+        
+    except Exception as e:
+        logger.error(f"Error: {str(e)}")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
+
+--- src/reposcope/core.py ---
+#!/usr/bin/env python3
+import os
+import logging
+from pathlib import Path
+from typing import List, Set
+import fnmatch
+
+logger = logging.getLogger(__name__)
+
+class RepoScope:
+    def __init__(self, root_dir: str):
+        self.root_dir = Path(root_dir).resolve()
+        self.patterns: Set[str] = set()
+        self.is_include_mode = False
+        logger.info(f"Initialized RepoScope with root directory: {self.root_dir}")
+
+    def _process_gitignore_pattern(self, pattern: str) -> List[str]:
+        """Process a single pattern according to .gitignore rules."""
+        if not pattern or pattern.startswith('#'):
+            return []
+
+        patterns = []
+        
+        # Handle directory patterns
+        if pattern.endswith('/'):
+            pattern = pattern[:-1]
+            # Add both with and without trailing slash
+            patterns.extend([pattern, f"{pattern}/"])
+        else:
+            patterns.append(pattern)
+
+        # If pattern doesn't start with /, add **/ variant to match in subdirectories
+        if not pattern.startswith('/'):
+            for p in patterns.copy():
+                patterns.append(f"**/{p}")
+
+        # If pattern starts with /, remove it as we're using relative paths
+        patterns = [p[1:] if p.startswith('/') else p for p in patterns]
+
+        return patterns
+
+    def use_gitignore(self) -> 'RepoScope':
+        """Load patterns from .gitignore file."""
+        gitignore_path = self.root_dir / '.gitignore'
+        if gitignore_path.exists():
+            logger.info(f"Loading patterns from .gitignore: {gitignore_path}")
+            self._load_patterns_from_file(gitignore_path)
+        else:
+            logger.warning(f"No .gitignore found in {self.root_dir}")
+        return self
+
+    def use_ignore_file(self, ignore_file: str) -> 'RepoScope':
+        """Load patterns from specified ignore file using .gitignore rules."""
+        ignore_path = Path(ignore_file)
+        if ignore_path.exists():
+            logger.info(f"Loading patterns from ignore file: {ignore_path}")
+            self._load_patterns_from_file(ignore_path)
+        else:
+            logger.warning(f"Ignore file not found: {ignore_path}")
+        return self
+
+    def use_ignore_patterns(self, patterns: List[str]) -> 'RepoScope':
+        """Add ignore patterns directly, processing them according to .gitignore rules."""
+        if patterns:
+            logger.info(f"Adding ignore patterns: {patterns}")
+            for pattern in patterns:
+                processed_patterns = self._process_gitignore_pattern(pattern)
+                self.patterns.update(processed_patterns)
+                logger.debug(f"Pattern '{pattern}' expanded to: {processed_patterns}")
+        return self
+
+    def use_include_file(self, include_file: str) -> 'RepoScope':
+        """Switch to include mode and load patterns from include file using .gitignore rules."""
+        self.is_include_mode = True
+        self.patterns.clear()
+        include_path = Path(include_file)
+        if include_path.exists():
+            logger.info(f"Loading include patterns from file: {include_path}")
+            self._load_patterns_from_file(include_path)
+        else:
+            logger.warning(f"Include file not found: {include_path}")
+        return self
+
+    def use_include_patterns(self, patterns: List[str]) -> 'RepoScope':
+        """Switch to include mode and use specified patterns, processing them according to .gitignore rules."""
+        logger.info(f"Switching to include mode with patterns: {patterns}")
+        self.is_include_mode = True
+        self.patterns.clear()
+        if patterns:
+            for pattern in patterns:
+                processed_patterns = self._process_gitignore_pattern(pattern)
+                self.patterns.update(processed_patterns)
+                logger.debug(f"Pattern '{pattern}' expanded to: {processed_patterns}")
+        return self
+
+    def _load_patterns_from_file(self, file_path: Path):
+        """Load and process patterns from a file according to .gitignore rules."""
+        patterns_before = len(self.patterns)
+        with open(file_path, 'r') as f:
+            for line in f:
+                pattern = line.strip()
+                processed_patterns = self._process_gitignore_pattern(pattern)
+                if processed_patterns:
+                    self.patterns.update(processed_patterns)
+                    logger.debug(f"Pattern '{pattern}' expanded to: {processed_patterns}")
+        
+        patterns_added = len(self.patterns) - patterns_before
+        logger.debug(f"Loaded {patterns_added} patterns from {file_path}")
+
+    def _should_skip_directory(self, dir_path: Path) -> bool:
+        """Check if directory should be skipped based on patterns."""
+        if self.is_include_mode:
+            return False
+
+        rel_path = str(dir_path.relative_to(self.root_dir))
+        if not rel_path:  # Root directory
+            return False
+
+        # Add trailing slash to match directory patterns
+        rel_path_with_slash = f"{rel_path}/"
+        
+        for pattern in self.patterns:
+            if fnmatch.fnmatch(rel_path, pattern) or fnmatch.fnmatch(rel_path_with_slash, pattern):
+                logger.debug(f"Skipping directory {rel_path} (matched pattern: {pattern})")
+                return True
+        return False
+
+    def _should_include_file(self, file_path: Path) -> bool:
+        """Determine if a file should be included based on current mode and patterns."""
+        rel_path = str(file_path.relative_to(self.root_dir))
+        
+        # Always skip .git directory
+        if ".git/" in f"{rel_path}/":
+            return False
+
+        if self.is_include_mode:
+            # Include mode: file must match at least one pattern
+            should_include = any(fnmatch.fnmatch(rel_path, pattern) for pattern in self.patterns)
+            logger.debug(f"Include mode - File {rel_path}: {'✓' if should_include else '✗'}")
+            return should_include
+        else:
+            # Ignore mode: file must not match any pattern
+            for pattern in self.patterns:
+                if fnmatch.fnmatch(rel_path, pattern):
+                    logger.debug(f"Ignore mode - File {rel_path}: ✗ (matched pattern: {pattern})")
+                    return False
+            logger.debug(f"Ignore mode - File {rel_path}: ✓")
+            return True
+
+    def collect_files(self) -> List[Path]:
+        """Collect all files based on current configuration."""
+        logger.info(f"Starting file collection in {'include' if self.is_include_mode else 'ignore'} mode")
+        logger.info(f"Current patterns: {self.patterns}")
+        
+        included_files = []
+        
+        for root, dirs, files in os.walk(self.root_dir, topdown=True):
+            root_path = Path(root)
+
+            # Modify dirs in-place to skip ignored directories
+            dirs[:] = [d for d in dirs if not self._should_skip_directory(root_path / d)]
+
+            for file in files:
+                file_path = root_path / file
+                if self._should_include_file(file_path):
+                    included_files.append(file_path)
+
+        logger.info(f"Collected {len(included_files)} files")
+        return included_files
+
+    def generate_context_file(self, output_file: str):
+        """Generate the context file with directory tree and file contents."""
+        logger.info(f"Generating context file: {output_file}")
+        files = self.collect_files()
+        
+        with open(output_file, 'w') as f:
+            # Write root directory name
+            f.write(f"Repository: {self.root_dir.name}\n\n")
+            
+            # Write file tree
+            f.write("File Tree:\n")
+            for file in sorted(files):
+                rel_path = file.relative_to(self.root_dir)
+                f.write(f"└── {rel_path}\n")
+            f.write("\n")
+            
+            # Write file contents
+            f.write("File Contents:\n")
+            written_files = 0
+            for file in sorted(files):
+                rel_path = file.relative_to(self.root_dir)
+                f.write(f"\n--- {rel_path} ---\n")
+                try:
+                    with open(file, 'r') as content_file:
+                        f.write(content_file.read())
+                    written_files += 1
+                except UnicodeDecodeError:
+                    f.write("[Binary file]\n")
+                    logger.warning(f"Skipped binary file: {rel_path}")
+                except Exception as e:
+                    f.write(f"[Error reading file: {str(e)}]\n")
+                    logger.error(f"Error reading file {rel_path}: {str(e)}")
+                f.write("\n")
+        
+        logger.info(f"Successfully wrote {written_files} files to {output_file}")
+
+--- tests/test_reposcope.py ---
+import pytest
+import os
+from pathlib import Path
+import tempfile
+import shutil
+from reposcope.core import RepoScope
+
+@pytest.fixture
+def temp_repo():
+    """Create a temporary repository with test files."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        repo_dir = Path(temp_dir)
+        
+        # Create directory structure
+        (repo_dir / "src").mkdir()
+        (repo_dir / "docs").mkdir()
+        (repo_dir / "tests").mkdir()
+        (repo_dir / "build").mkdir()
+        (repo_dir / ".git").mkdir()
+        (repo_dir / "__pycache__").mkdir()
+        
+        # Create test files
+        (repo_dir / "src" / "main.py").write_text("print('main')")
+        (repo_dir / "src" / "utils.py").write_text("print('utils')")
+        (repo_dir / "docs" / "README.md").write_text("# Documentation")
+        (repo_dir / "tests" / "test_main.py").write_text("def test_main(): pass")
+        (repo_dir / "build" / "output.txt").write_text("build output")
+        (repo_dir / "__pycache__" / "main.cpython-39.pyc").write_text("cached")
+        (repo_dir / ".gitignore").write_text("\n".join([
+            "build/",
+            "__pycache__/",
+            "*.pyc",
+        ]))
+        
+        yield repo_dir
+
+@pytest.fixture
+def temp_ignore_file():
+    """Create a temporary ignore file."""
+    with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+        f.write("\n".join([
+            "tests/",
+            "*.md",
+        ]))
+        return Path(f.name)
+
+def test_gitignore_basic(temp_repo):
+    """Test basic .gitignore functionality."""
+    scope = RepoScope(temp_repo)
+    scope.use_gitignore()
+    files = {str(f.relative_to(temp_repo)) for f in scope.collect_files()}
+    
+    # Should include
+    assert "src/main.py" in files
+    assert "src/utils.py" in files
+    assert "docs/README.md" in files
+    
+    # Should exclude
+    assert "build/output.txt" not in files
+    assert "__pycache__/main.cpython-39.pyc" not in files
+
+def test_extra_ignore_file(temp_repo, temp_ignore_file):
+    """Test using an additional ignore file."""
+    scope = RepoScope(temp_repo)
+    scope.use_ignore_file(str(temp_ignore_file))
+    files = {str(f.relative_to(temp_repo)) for f in scope.collect_files()}
+    
+    # Should include
+    assert "src/main.py" in files
+    assert "src/utils.py" in files
+    
+    # Should exclude based on ignore file
+    assert "tests/test_main.py" not in files
+    assert "docs/README.md" not in files
+
+def test_command_line_ignore(temp_repo):
+    """Test ignore patterns from command line."""
+    scope = RepoScope(temp_repo)
+    scope.use_ignore_patterns(["*.py", "docs/"])
+    files = {str(f.relative_to(temp_repo)) for f in scope.collect_files()}
+    
+    # Should exclude
+    assert "src/main.py" not in files
+    assert "docs/README.md" not in files
+    
+    # Should include
+    assert "build/output.txt" in files
+
+def test_include_patterns(temp_repo):
+    """Test include patterns."""
+    scope = RepoScope(temp_repo)
+    scope.use_include_patterns(["src/*.py"])
+    files = {str(f.relative_to(temp_repo)) for f in scope.collect_files()}
+    
+    # Should include only Python files in src
+    assert "src/main.py" in files
+    assert "src/utils.py" in files
+    
+    # Should exclude everything else
+    assert "docs/README.md" not in files
+    assert "tests/test_main.py" not in files
+    assert "build/output.txt" not in files
+
+def test_include_file(temp_repo):
+    """Test include patterns from file."""
+    include_file = temp_repo / "include.txt"
+    include_file.write_text("src/*.py\ndocs/*.md")
+    
+    scope = RepoScope(temp_repo)
+    scope.use_include_file(str(include_file))
+    files = {str(f.relative_to(temp_repo)) for f in scope.collect_files()}
+    
+    # Should include only specified patterns
+    assert "src/main.py" in files
+    assert "docs/README.md" in files
+    
+    # Should exclude everything else
+    assert "tests/test_main.py" not in files
+    assert "build/output.txt" not in files
+
+def test_combining_gitignore_and_extra_ignore(temp_repo, temp_ignore_file):
+    """Test combining .gitignore and extra ignore file."""
+    scope = RepoScope(temp_repo)
+    scope.use_gitignore()
+    scope.use_ignore_file(str(temp_ignore_file))
+    files = {str(f.relative_to(temp_repo)) for f in scope.collect_files()}
+    
+    # Should exclude from both .gitignore and extra ignore
+    assert "build/output.txt" not in files  # from .gitignore
+    assert "docs/README.md" not in files    # from extra ignore
+    assert "tests/test_main.py" not in files  # from extra ignore
+
+def test_include_overrides_ignore(temp_repo):
+    """Test that include mode overrides any ignore patterns."""
+    scope = RepoScope(temp_repo)
+    scope.use_gitignore()  # This should be ignored once we switch to include mode
+    scope.use_include_patterns(["build/*"])  # This should take precedence
+    files = {str(f.relative_to(temp_repo)) for f in scope.collect_files()}
+    
+    # Should include only build files, despite being in .gitignore
+    assert "build/output.txt" in files
+    assert len(files) == 1
+
+def test_nonexistent_files(temp_repo):
+    """Test handling of nonexistent ignore/include files."""
+    scope = RepoScope(temp_repo)
+    
+    # Test ignore mode with nonexistent file
+    scope.use_ignore_file("nonexistent.txt")
+    files_ignore = scope.collect_files()
+    # In ignore mode with no patterns, should include all files
+    assert len(files_ignore) > 0
+    
+    # Create new scope for include mode test
+    scope = RepoScope(temp_repo)
+    scope.use_include_file("also_nonexistent.txt")
+    files_include = scope.collect_files()
+    # In include mode with no patterns, should include no files
+    assert len(files_include) == 0
+
+def test_empty_patterns(temp_repo):
+    """Test handling of empty pattern lists."""
+    scope = RepoScope(temp_repo)
+    
+    # Empty ignore patterns should include everything
+    scope.use_ignore_patterns([])
+    files1 = set(scope.collect_files())
+    assert len(files1) > 0
+    
+    # Empty include patterns should include nothing
+    scope.use_include_patterns([])
+    files2 = set(scope.collect_files())
+    assert len(files2) == 0

@@ -1,130 +1,125 @@
 # RepoScope 🔍
 
-A tiny tool that dumps your repo files into a single document for easy sharing with AI assistants. Made because I was tired of copy-pasting files one by one into ChatGPT chats.
-
-## Requirements
-- Linux only (Windows and macOS not supported yet)
-- Python >= 3.9
+Grabs your repo files and dumps them into one document - super handy when you need to share code with AI assistants. Made it because I was tired of copy-pasting files one by one into ChatGPT chats.
 
 ## Install
 ```bash
 pip install reposcope
 ```
+Python 3.9+ required. Linux only for now (Windows/macOS later maybe).
 
-## Usage
+## Quick Start
 
-Run in your project directory:
+Default mode - just use your .gitignore:
 ```bash
-# Respect .gitignore (what you want most of the time)
-reposcope --use-gitignore
-
-# Or pick specific files
-reposcope --include "*.py" "src/*.js"
+# In your project directory:
+reposcope -g
 ```
 
-You'll get `context.txt` with your files.
-
-## How it Works
-
-Two modes to use:
-
-### 1. Ignore Mode
-
-Skip some files:
+Or pick specific files:
 ```bash
-# Use .gitignore
-reposcope --use-gitignore
-
-# Use custom ignore file
-reposcope --ignore-file my_ignores.txt
-
-# Ignore directly
-reposcope --ignore "*.log" "temp/*"
-
-# Mix them
-reposcope --use-gitignore --ignore "*.log" --ignore-file custom_ignore.txt
+# Just Python and JS files from src:
+reposcope -i "src/*.py" "src/*.js"
 ```
 
-### 2. Include Mode
-
-Pick specific files:
-```bash
-# By pattern
-reposcope --include "*.py" "src/*.js"
-
-# From file
-reposcope --include-file include.txt
-```
-
-### Patterns
-
-Work like in .gitignore:
-```
-*.py            # Python files
-src/*.js        # JS in src directory
-docs/**/*.md    # markdown in docs and subdirs
-node_modules/   # entire directory
-config.json     # specific file
-```
-
-### Extra Options
-
-```bash
-# Change output name
-reposcope --output something.txt
-
-# Different directory
-reposcope --dir ../other-project
-
-# See what's happening
-reposcope --use-gitignore --verbose
-```
-
-## Output Example
-
-You get a text file like this:
+You'll get a `context.txt` that looks like this:
 ```
 Repository: my-project
 
 File Tree:
 └── src/main.py
-└── docs/README.md
-└── config.json
+└── src/utils.py
+└── README.md
 
 File Contents:
 
 --- src/main.py ---
-[content here]
+def main():
+    print("Hello World!")
 
---- docs/README.md ---
-[content here]
+--- src/utils.py ---
+def add(a, b):
+    return a + b
 
---- config.json ---
-[content here]
+--- README.md ---
+# My Project
+A simple example...
 ```
+
+## Two Ways to Use It
+
+### 1. Exclude Mode - Skip Stuff You Don't Want
+
+```bash
+# Use .gitignore (easiest)
+reposcope -g
+
+# Skip specific files
+reposcope -x "*.log" "temp/*"     # -x or --exclude or --ignore
+reposcope -X exclude.txt          # -X or --exclude-file or --ignore-file
+
+# Mix them
+reposcope -g -x "*.log" -X more_excludes.txt
+```
+
+### 2. Include Mode - Pick Exactly What You Want
+
+```bash
+# Pick specific files
+reposcope -i "*.py" "src/*.js"    # -i or --include
+reposcope -I include.txt          # -I or --include-file
+```
+
+Files are matched using .gitignore-style patterns:
+```
+*.py            # All Python files
+src/*.js        # JS files in src/
+docs/**/*.md    # Markdown files in docs/ and subdirs
+node_modules/   # Entire directory
+config.json     # Specific file
+```
+
+## All Options
+
+| Short | Long                             | What it Does                          |
+|-------|----------------------------------|---------------------------------------|
+| -g    | --use-gitignore                 | Use .gitignore                        |
+| -x    | --exclude, --ignore             | Patterns to exclude                   |
+| -X    | --exclude-file, --ignore-file   | File with exclude patterns           |
+| -i    | --include                       | Patterns to include                   |
+| -I    | --include-file                  | File with include patterns           |
+| -o    | --output                        | Output file (default: context.txt)    |
+| -d    | --dir                           | Different directory                   |
+| -v    | --verbose                       | Show what's happening                 |
 
 ## Tips
 
-1. Start with `--use-gitignore` - probably what you want
-2. If getting too much stuff, pick what you need:
+1. Start with `-g` if you have a good .gitignore
+
+2. Too much stuff? Exclude some:
    ```bash
-   reposcope --include "src/*.py" "*.md"
+   reposcope -g -x "*.cache" ".env"
    ```
-3. Keep patterns in files for different tasks:
+
+3. Need specific files? Use include:
+   ```bash
+   reposcope -i "src/*.py" "*.md"
+   ```
+
+4. Doing it often? Save patterns in a file:
    ```bash
    # frontend.txt
    src/components/*.jsx
    src/styles/*.css
    ```
-   Then:
    ```bash
-   reposcope --include-file frontend.txt
+   reposcope -I frontend.txt
    ```
 
 ## License
 
-MIT - do whatever
+MIT. Do whatever.
 
 ## Contributing
 
-Small tool but if you spot bugs or have ideas, open an issue.
+It's a small tool but if you spot bugs or have ideas - feel free to open an issue.
