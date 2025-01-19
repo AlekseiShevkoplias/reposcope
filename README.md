@@ -9,7 +9,7 @@ I made this because I was tired of copy-pasting files one by one into AI chats. 
 Working with AI is great until you need to show it your whole codebase. Copying files manually is a pain, and it's easy to miss important stuff or accidentally share sensitive files. This tool just:
 - Makes a nice file tree so AI understands your project structure
 - Copies all the relevant file contents
-- Respects your `.gitignore` (no accidental secrets sharing!)
+- Respects your `.gitignore`
 - Lets you pick exactly what to include or exclude
 
 ## Quick Start
