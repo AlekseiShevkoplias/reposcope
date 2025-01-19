@@ -1,99 +1,88 @@
 # RepoScope 🔍
 
-A tiny tool that makes sharing code with AI much easier. It dumps files from a directory into a single well-organized document - so you can show your whole project to ChatGPT or Claude.
-
-I made this because I was tired of copy-pasting files one by one into AI chats. Maybe you'll find it useful too.
+A tiny tool that dumps your repo files into a single document for easy sharing with AI assistants. Made because I was tired of copy-pasting files one by one into ChatGPT chats.
 
 ## Requirements
+- Linux only (Windows and macOS not supported yet)
+- Python >= 3.9
 
-- Linux (Windows and macOS not supported yet)
-- Python 3.8 or higher
-
-## Why RepoScope?
-
-Working with AI is great until you need to show it your whole codebase. Copying files manually is a pain, and it's easy to miss important stuff or accidentally share sensitive or unneccesary files. This tool just:
-- Makes a nice file tree so AI understands your project structure
-- Copies all the relevant file contents
-- Respects your `.gitignore`
-- Lets you pick exactly what to include or exclude
-
-## Quick Start
-
-Install it:
+## Install
 ```bash
 pip install reposcope
 ```
 
-Run it in your project:
+## Usage
+
+Run in your project directory:
 ```bash
-# Most common use case - respect .gitignore
+# Respect .gitignore (what you want most of the time)
 reposcope --use-gitignore
 
 # Or pick specific files
 reposcope --include "*.py" "src/*.js"
 ```
 
-That's it - you'll get a `context.txt` ready to paste into your AI chat.
+You'll get `context.txt` with your files.
 
-## How to Use
+## How it Works
 
-There are two ways to use it:
+Two modes to use:
 
-### 1. Ignore Mode (Skip Files)
+### 1. Ignore Mode
 
-When you want everything EXCEPT certain files:
+Skip some files:
 ```bash
-# Use your .gitignore (probably what you want)
+# Use .gitignore
 reposcope --use-gitignore
 
-# Use a custom ignore file
+# Use custom ignore file
 reposcope --ignore-file my_ignores.txt
 
-# Ignore stuff directly
+# Ignore directly
 reposcope --ignore "*.log" "temp/*"
 
-# Mix and match
+# Mix them
 reposcope --use-gitignore --ignore "*.log" --ignore-file custom_ignore.txt
 ```
 
-### 2. Include Mode (Pick Files)
+### 2. Include Mode
 
-When you only want specific files:
+Pick specific files:
 ```bash
-# Pick files by pattern
+# By pattern
 reposcope --include "*.py" "src/*.js"
 
-# Or keep patterns in a file
+# From file
 reposcope --include-file include.txt
 ```
 
-### Pattern Format
+### Patterns
 
-Works just like .gitignore:
+Work like in .gitignore:
 ```
-*.py            # grab all Python files
-src/*.js        # JS files in src directory
-docs/**/*.md    # markdown files in docs and subdirs
+*.py            # Python files
+src/*.js        # JS in src directory
+docs/**/*.md    # markdown in docs and subdirs
 node_modules/   # entire directory
 config.json     # specific file
 ```
 
-### Other Stuff You Can Do
+### Extra Options
 
 ```bash
-# Change output file name
+# Change output name
 reposcope --output something.txt
 
-# Run in a different directory
+# Different directory
 reposcope --dir ../other-project
 
 # See what's happening
 reposcope --use-gitignore --verbose
 ```
 
-## What You Get
+## Output Example
 
-A clean text file that looks like this:
+You get a text file like this:
 ```
 Repository: my-project
 
@@ -105,23 +94,23 @@ File Tree:
 File Contents:
 
 --- src/main.py ---
-[file content here]
+[content here]
 
 --- docs/README.md ---
-[file content here]
+[content here]
 
 --- config.json ---
-[file content here]
+[content here]
 ```
 
-## Pro Tips
+## Tips
 
-1. Start with `--use-gitignore` - it usually does what you want
-2. If you're getting too much stuff, just pick what you need:
+1. Start with `--use-gitignore` - probably what you want
+2. If getting too much stuff, pick what you need:
    ```bash
    reposcope --include "src/*.py" "*.md"
    ```
-3. Create separate include files for different tasks:
+3. Keep patterns in files for different tasks:
    ```bash
    # frontend.txt
    src/components/*.jsx
@@ -129,13 +118,13 @@ File Contents:
    ```
    Then:
    ```bash
-   reposcope --include-file frontend.txt --output frontent_context.txt
+   reposcope --include-file frontend.txt
    ```
 
 ## License
 
-MIT - do whatever you want with it.
+MIT - do whatever
 
 ## Contributing
 
-It's a tiny tool but if you spot bugs or have ideas, open an issue or PR!
+Small tool but if you spot bugs or have ideas, open an issue.
