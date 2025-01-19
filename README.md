@@ -1,12 +1,12 @@
 # RepoScope 🔍
 
-A tiny tool that makes sharing code with AI much easier. It dumps your repository files into a single well-organized document - super handy when you need to show your whole project to ChatGPT or Claude.
+A tiny tool that makes sharing code with AI much easier. It dumps files from a directory into a single well-organized document - so you can show your whole project to ChatGPT or Claude.
 
 I made this because I was tired of copy-pasting files one by one into AI chats. Maybe you'll find it useful too.
 
 ## Why RepoScope?
 
-Working with AI is great until you need to show it your whole codebase. Copying files manually is a pain, and it's easy to miss important stuff or accidentally share sensitive files. This tool just:
+Working with AI is great until you need to show it your whole codebase. Copying files manually is a pain, and it's easy to miss important stuff or accidentally share sensitive or unneccesary files. This tool just:
 - Makes a nice file tree so AI understands your project structure
 - Copies all the relevant file contents
 - Respects your `.gitignore`
@@ -64,7 +64,7 @@ reposcope --include-file include.txt
 
 ### Pattern Format
 
-Works just like .gitignore because why make up new syntax:
+Works just like .gitignore:
 ```
 *.py            # grab all Python files
 src/*.js        # JS files in src directory
@@ -124,7 +124,7 @@ File Contents:
    ```
    Then:
    ```bash
-   reposcope --include-file frontend.txt
+   reposcope --include-file frontend.txt --output frontent_context.txt
    ```
 
 ## License
@@ -134,6 +134,3 @@ MIT - do whatever you want with it.
 ## Contributing
 
 It's a tiny tool but if you spot bugs or have ideas, open an issue or PR!
-
----
-Made this because coding with AI is awesome but showing it your code shouldn't be a hassle. Hope it helps!
