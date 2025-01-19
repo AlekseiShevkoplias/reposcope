@@ -4,6 +4,11 @@ A tiny tool that makes sharing code with AI much easier. It dumps files from a d
 
 I made this because I was tired of copy-pasting files one by one into AI chats. Maybe you'll find it useful too.
 
+## Requirements
+
+- Linux (Windows and macOS not supported yet)
+- Python 3.8 or higher
+
 ## Why RepoScope?
 
 Working with AI is great until you need to show it your whole codebase. Copying files manually is a pain, and it's easy to miss important stuff or accidentally share sensitive or unneccesary files. This tool just:
