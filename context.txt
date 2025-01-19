@@ -11,6 +11,11 @@ File Tree:
 └── src/reposcope/__main__.py
 └── src/reposcope/cli.py
 └── src/reposcope/core.py
+└── src/reposcope/profiles.py
+└── test.res
+└── tests/test_cli.py
+└── tests/test_profiles_integration.py
+└── tests/test_profiles_unit.py
 └── tests/test_reposcope.py
 
 File Contents:
@@ -114,134 +119,217 @@ SOFTWARE.
 --- README.md ---
 # RepoScope 🔍
 
-A tiny tool that dumps your repo files into a single document for easy sharing with AI assistants. Made because I was tired of copy-pasting files one by one into ChatGPT chats.
+Effortlessly generate a comprehensive context of your repository, perfect for sharing with AI assistants. Tired of copy-pasting individual files into tools like ChatGPT? RepoScope automates the process.
 
-## Requirements
-- Linux only (Windows and macOS not supported yet)
-- Python >= 3.9
+---
 
 ## Install
+
 ```bash
 pip install reposcope
 ```
 
-## Usage
+Python 3.9+ required. Linux only for now (Windows/macOS maybe later).
 
-Run in your project directory:
+---
+
+## Quick Start
+
+Default mode - rely on your `.gitignore` to exclude unnecessary files:
 ```bash
-# Respect .gitignore (what you want most of the time)
-reposcope --use-gitignore
-
-# Or pick specific files
-reposcope --include "*.py" "src/*.js"
+reposcope -g
 ```
 
-You'll get `context.txt` with your files.
-
-## How it Works
-
-Two modes to use:
-
-### 1. Ignore Mode
-
-Skip some files:
+Or, explicitly select the files you want:
 ```bash
-# Use .gitignore
-reposcope --use-gitignore
-
-# Use custom ignore file
-reposcope --ignore-file my_ignores.txt
-
-# Ignore directly
-reposcope --ignore "*.log" "temp/*"
-
-# Mix them
-reposcope --use-gitignore --ignore "*.log" --ignore-file custom_ignore.txt
+reposcope -i "src/*.py" "src/*.js"
 ```
 
-### 2. Include Mode
+You'll get a `context.txt` file with a neatly structured output:
 
-Pick specific files:
-```bash
-# By pattern
-reposcope --include "*.py" "src/*.js"
-
-# From file
-reposcope --include-file include.txt
-```
-
-### Patterns
-
-Work like in .gitignore:
-```
-*.py            # Python files
-src/*.js        # JS in src directory
-docs/**/*.md    # markdown in docs and subdirs
-node_modules/   # entire directory
-config.json     # specific file
-```
-
-### Extra Options
-
-```bash
-# Change output name
-reposcope --output something.txt
-
-# Different directory
-reposcope --dir ../other-project
-
-# See what's happening
-reposcope --use-gitignore --verbose
-```
-
-## Output Example
-
-You get a text file like this:
 ```
 Repository: my-project
 
 File Tree:
 └── src/main.py
-└── docs/README.md
-└── config.json
+└── src/utils.py
+└── README.md
 
 File Contents:
 
 --- src/main.py ---
-[content here]
-
---- docs/README.md ---
-[content here]
-
---- config.json ---
-[content here]
+def main():
+    print("Hello World!")
+...
 ```
 
-## Tips
+---
 
-1. Start with `--use-gitignore` - probably what you want
-2. If getting too much stuff, pick what you need:
+## Why RepoScope?
+
+Managing large repositories can be overwhelming when you need to share or review specific sections. Copy-pasting is tedious and error-prone, especially when dealing with multiple files. RepoScope streamlines this by:
+
+- **Saving Time:** Automates file collection into a single document.
+- **Providing Flexibility:** Choose files to include or exclude based on your needs.
+- **Ensuring Reproducibility:** Profiles let you save selection patterns for consistent results.
+
+---
+
+## Two Modes of Operation
+
+### 1. **Exclude Mode**
+Skip files or directories you don’t need:
+```bash
+reposcope -g  # use .gitignore
+reposcope -x "*.log" "temp/*"  # specify gitignore-style patterns
+reposcope -X exclude.txt  # use gitignore-style file
+```
+Use patterns or files to exclude unwanted files.
+
+### 2. **Include Mode**
+Explicitly select files you want to include:
+```bash
+reposcope -i "*.py" "src/*.js"
+reposcope -I include.txt
+```
+
+**Important:** You **cannot** mix exclude and include patterns within a single command. Choose one mode per operation to avoid ambiguity and ensure consistent results.
+
+---
+
+## Profiles Management
+
+Profiles allow you to save and reuse file selection patterns, making scanning efficient and repeatable.
+
+### Why Use Profiles?
+
+Imagine a scenario where you regularly need to include only Python source files and Markdown documents. Instead of retyping the patterns every time, you can create a profile:
+
+```bash
+reposcope profile create my_profile --mode include
+reposcope profile add my_profile "*.py" "docs/*.md"
+```
+
+Now, simply use:
+```bash
+reposcope -p my_profile
+```
+
+### Profile Commands
+
+#### Create a Profile
+```bash
+reposcope profile create my_profile --mode include
+```
+* **Modes**:
+  * `include`: Only files matching patterns are included.
+  * `exclude`: All files are included except those matching patterns.
+
+#### Add Patterns
+```bash
+reposcope profile add my_profile "*.py" "src/*.js"
+```
+
+#### Remove Patterns
+```bash
+reposcope profile remove my_profile "*.py"
+```
+
+#### Import Patterns from a File
+```bash
+reposcope profile import my_profile patterns.txt
+```
+Supports `.gitignore` format with the `--gitignore` flag.
+
+#### Export Patterns
+```bash
+reposcope profile export my_profile --gitignore
+```
+
+#### List Profiles
+```bash
+reposcope profile list_profiles
+```
+
+#### Show Profile Details
+```bash
+reposcope profile show my_profile
+```
+
+#### Delete a Profile
+```bash
+reposcope profile delete my_profile
+```
+
+---
+
+## Command Line Options
+
+| Short | Long                                | Description                             |
+|-------|-------------------------------------|-----------------------------------------|
+| -g    | --use-gitignore                     | Use .gitignore                          |
+| -x    | --exclude, --ignore                 | Patterns to exclude                     |
+| -X    | --exclude-file, --ignore-file       | File with exclude patterns              |
+| -i    | --include                           | Patterns to include                     |
+| -I    | --include-file                      | File with include patterns              |
+| -o    | --output                            | Output file (default: context.txt)      |
+| -d    | --dir                               | Repository directory                    |
+| -v    | --verbose                           | Show debug logs                         |
+| -p    | --profile                           | Use a saved profile                     |
+
+---
+
+## Development & Testing
+
+1. **Install development dependencies**:
    ```bash
-   reposcope --include "src/*.py" "*.md"
+   pip install -e ".[dev]"
    ```
-3. Keep patterns in files for different tasks:
+
+2. **Run the test suite**:
    ```bash
-   # frontend.txt
-   src/components/*.jsx
-   src/styles/*.css
+   pytest
    ```
-   Then:
-   ```bash
-   reposcope --include-file frontend.txt
-   ```
+
+3. **Testing Details**:
+   - CLI commands (`reposcope`) and subcommands (like `profile create`) are fully tested.
+   - Profiles are mocked to ensure accurate interactions.
+
+---
+
+## Examples
+
+### Generate Context Using a Profile
+```bash
+reposcope -p my_profile -o output.txt
+```
+
+### Combine Exclude and Include Patterns (Not Allowed)
+You **cannot** mix `-x` (exclude) and `-i` (include) options:
+```bash
+# Invalid usage
+reposcope -g -x "*.log" -i "*.py"
+```
+
+Instead, stick to one mode per command.
+
+### Mix Verbose Logging with File Output
+```bash
+reposcope -g -v -o repo_context.txt
+```
+
+---
 
 ## License
 
-MIT - do whatever
+MIT. Do whatever.
+
+---
 
 ## Contributing
 
-Small tool but if you spot bugs or have ideas, open an issue.
+If you spot bugs or have ideas, feel free to open an issue or PR. Help us make RepoScope even better!
+
 
 --- context.txt ---
 
@@ -310,91 +398,161 @@ def run_main():
 import argparse
 import logging
 import sys
+from pathlib import Path
 from reposcope.core import RepoScope
+from reposcope.profiles import ProfileManager, ProfileError
 
 def setup_logging(verbose: bool):
-    """Configure logging based on verbosity level."""
+    """Configure logging to include log levels and output to stderr."""
     level = logging.DEBUG if verbose else logging.WARNING
     logging.basicConfig(
         level=level,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        datefmt='%H:%M:%S'
+        format='%(levelname)s: %(message)s',  # Include log level names
+        stream=sys.stderr,  # Explicitly output to stderr
+        force=True  # Force reconfiguration to ensure stderr output
     )
+    logging.debug("Verbose logging enabled")  # Add a debug log to ensure it's captured
 
-def main():
+
+def setup_parser():
+    """Create and configure the argument parser."""
     parser = argparse.ArgumentParser(
-        description="RepoScope - Generate repository context files for LLMs"
+        description="Generate repository context files for LLMs"
     )
+    subparsers = parser.add_subparsers(dest='command')
+
+    # Scan command (main functionality)
+    scan = subparsers.add_parser('scan', help='Generate context file (default command)')
+    _setup_scan_arguments(scan)
+    scan.set_defaults(command='scan')  # Make 'scan' the default
+
+    # Profile command group
+    profile = subparsers.add_parser('profile', help='Manage profiles')
+    profile_sub = profile.add_subparsers(dest='action', required=True)
+    _setup_profile_arguments(profile_sub)
+
+    return parser
+
+
+def _setup_scan_arguments(parser):
+    """Setup arguments for the main scan command."""
     parser.add_argument(
-        "--dir", 
+        "-d", "--dir", 
         default=".",
-        help="Root directory of the repository (default: current directory)"
+        help="Root directory of the repository"
     )
     parser.add_argument(
-        "--output",
+        "-o", "--output",
         default="context.txt",
-        help="Output file path (default: context.txt)"
+        help="Output file path"
     )
     parser.add_argument(
         "-v", "--verbose",
         action="store_true",
-        help="Enable verbose output"
+        help="Show what's happening"
+    )
+    
+    # Profile usage
+    parser.add_argument(
+        "-p", "--profile",
+        help="Use saved profile"
     )
 
-    # Ignore-based selection options
-    ignore_group = parser.add_argument_group('Ignore-based selection')
-    ignore_group.add_argument(
-        "--use-gitignore",
+    # Basic operation modes
+    parser.add_argument(
+        "-g", "--use-gitignore",
         action="store_true",
         help="Use patterns from .gitignore file"
     )
-    ignore_group.add_argument(
-        "--ignore-file",
-        help="Use patterns from specified ignore file"
-    )
-    ignore_group.add_argument(
-        "--ignore",
+
+    # Ignore-based selection
+    parser.add_argument(
+        "-x", "--exclude", "--ignore",
+        dest="ignore",
         nargs="*",
-        help="Specify ignore patterns directly"
+        help="Specify patterns to exclude"
+    )
+    parser.add_argument(
+        "-X", "--exclude-file", "--ignore-file",
+        dest="ignore_file",
+        help="Use patterns from specified exclude file"
     )
 
-    # Include-based selection options
-    include_group = parser.add_argument_group('Include-based selection')
-    include_group.add_argument(
-        "--include-file",
+    # Include-based selection
+    parser.add_argument(
+        "-i", "--include",
+        nargs="*",
+        help="Specify patterns to include"
+    )
+    parser.add_argument(
+        "-I", "--include-file",
         help="Use patterns from specified include file"
     )
-    include_group.add_argument(
-        "--include",
-        nargs="*",
-        help="Specify include patterns directly"
-    )
 
-    args = parser.parse_args()
-    
-    # Setup logging
-    setup_logging(args.verbose)
+def _setup_profile_arguments(subparsers):
+    """Setup arguments for profile management commands."""
+    # Create profile
+    create = subparsers.add_parser('create', help='Create new profile')
+    create.add_argument('name', help='Profile name')
+    create.add_argument('--mode', choices=['include', 'exclude'], required=True,
+                       help='Profile mode')
+
+    # Delete profile
+    delete = subparsers.add_parser('delete', help='Delete profile')
+    delete.add_argument('name', help='Profile name')
+
+    # List profiles
+    subparsers.add_parser('list_profiles', help='List available profiles')
+
+    # Show profile
+    show = subparsers.add_parser('show', help='Show profile details')
+    show.add_argument('name', help='Profile name')
+
+    # Add patterns
+    add = subparsers.add_parser('add', help='Add patterns to profile')
+    add.add_argument('name', help='Profile name')
+    add.add_argument('patterns', nargs='+', help='Patterns to add')
+
+    # Remove patterns
+    remove = subparsers.add_parser('remove', help='Remove patterns from profile')
+    remove.add_argument('name', help='Profile name')
+    remove.add_argument('patterns', nargs='+', help='Patterns to remove')
+
+    # Import patterns
+    import_cmd = subparsers.add_parser('import', help='Import patterns from file')
+    import_cmd.add_argument('name', help='Profile name')
+    import_cmd.add_argument('file', help='File to import patterns from')
+    import_cmd.add_argument('--gitignore', action='store_true',
+                           help='Parse as .gitignore format')
+
+    # Export patterns
+    export = subparsers.add_parser('export', help='Export patterns to stdout')
+    export.add_argument('name', help='Profile name')
+    export.add_argument('--gitignore', action='store_true',
+                       help='Format as .gitignore')
+
+def handle_scan(args, profile_mgr):
+    """Handle the main scan command."""
     logger = logging.getLogger(__name__)
+    logger.debug("Starting file collection with verbose logging enabled.")
 
-    # Check for mixing of modes
-    has_include = bool(args.include_file or args.include)
-    has_ignore = bool(args.use_gitignore or args.ignore_file or args.ignore)
-    
-    if has_include and has_ignore:
-        logger.warning("Both ignore and include options specified. Include patterns will take precedence.")
-
-    # Create RepoScope instance
     try:
         scope = RepoScope(args.dir)
 
-        # Check if we're in include mode
-        if has_include:
+        if args.profile:
+            profile = profile_mgr.get(args.profile)
+            if profile.mode == 'include':
+                scope.use_include_patterns(profile.patterns)
+            else:
+                scope.use_gitignore()
+                scope.use_ignore_patterns(profile.patterns)
+
+        if args.include or args.include_file:
             if args.include_file:
                 scope.use_include_file(args.include_file)
             if args.include:
                 scope.use_include_patterns(args.include)
         else:
-            # Ignore mode - apply specified ignore patterns
             if args.use_gitignore:
                 scope.use_gitignore()
             if args.ignore_file:
@@ -404,16 +562,102 @@ def main():
 
         scope.generate_context_file(args.output)
         print(f"Generated context file: {args.output}")
-        
+
     except Exception as e:
-        logger.error(f"Error: {str(e)}")
+        logger.error(f"Error: {e}")
         sys.exit(1)
+
+
+def handle_profile(args, profile_mgr):
+    """Handle profile management commands."""
+    try:
+        if args.action == 'create':
+            profile = profile_mgr.create(args.name, args.mode)
+            print(f"Created profile: {profile.summary()}")
+
+        elif args.action == 'delete':
+            profile_mgr.delete(args.name)
+            print(f"Deleted profile: {args.name}")
+
+        elif args.action == 'list_profiles':
+            profiles = profile_mgr.get_profiles()
+            if not profiles:
+                print("No profiles found")
+                return
+            print("Available profiles:")
+            for profile in profiles:
+                print(f"  {profile.summary()}")
+
+        elif args.action == 'show':
+            profile = profile_mgr.get(args.name)
+            print(profile.details())
+
+        elif args.action == 'add':
+            added = profile_mgr.add_patterns(args.name, args.patterns)
+            if added:
+                print(f"Added to {args.name}:")
+                for pattern in added:
+                    print(f"  {pattern}")
+            else:
+                print("No new patterns added (already exist)")
+
+        elif args.action == 'remove':
+            removed = profile_mgr.remove_patterns(args.name, args.patterns)
+            if removed:
+                print(f"Removed from {args.name}:")
+                for pattern in removed:
+                    print(f"  {pattern}")
+            else:
+                print("No patterns removed (not found)")
+
+        elif args.action == 'import':
+            added = profile_mgr.import_patterns(args.name, args.file, args.gitignore)
+            if added:
+                print(f"Imported to {args.name}:")
+                for pattern in added:
+                    print(f"  {pattern}")
+            else:
+                print("No new patterns imported (already exist)")
+
+        elif args.action == 'export':
+            print(profile_mgr.export_patterns(args.name, args.gitignore))
+
+    except ProfileError as e:
+        logging.error(str(e))
+        sys.exit(1)
+
+def main(): 
+    """ Entrypoint for the reposcope CLI. If the user has not specified a subcommand 
+    ('scan' or 'profile'), this function forces 'scan' to become the default subcommand, 
+    allowing top-level flags like -g or --exclude to work as intended. """
+    parser = setup_parser()
+    
+    # If no arguments provided, or first argument is not a known command
+    if len(sys.argv) == 1:
+        sys.argv.append('scan')
+    else:
+        first_arg = sys.argv[1]
+        if first_arg not in ['scan', 'profile', '-h', '--help']:
+            sys.argv.insert(1, 'scan')
+
+    args = parser.parse_args()
+    
+    # Always setup logging. For scan command, use verbose flag 
+    # For profile commands, default to warning level
+    verbose = hasattr(args, 'verbose') and args.verbose
+    setup_logging(verbose)
+    
+    profile_mgr = ProfileManager()
+
+    if args.command == 'scan':
+        handle_scan(args, profile_mgr)
+    elif args.command == 'profile':
+        handle_profile(args, profile_mgr)
 
 if __name__ == "__main__":
     main()
 
 --- src/reposcope/core.py ---
-#!/usr/bin/env python3
 import os
 import logging
 from pathlib import Path
@@ -619,13 +863,807 @@ class RepoScope:
         
         logger.info(f"Successfully wrote {written_files} files to {output_file}")
 
+--- src/reposcope/profiles.py ---
+#!/usr/bin/env python3
+import json
+from pathlib import Path
+import logging
+
+logger = logging.getLogger(__name__)
+
+class ProfileError(Exception):
+    """Base exception for profile-related errors."""
+    pass
+
+class Profile:
+    """A profile that stores include/exclude patterns."""
+    def __init__(self, name: str, mode: str, patterns: list[str] = None):
+        if mode not in ('include', 'exclude'):
+            raise ProfileError(f"Invalid mode: {mode}. Must be 'include' or 'exclude'")
+        self.name = name
+        self.mode = mode
+        self.patterns = patterns or []
+
+    def add_patterns(self, patterns: list[str]) -> list[str]:
+        """Add new patterns to the profile. Returns list of actually added patterns."""
+        new_patterns = [p for p in patterns if p not in self.patterns]
+        if new_patterns:
+            self.patterns.extend(new_patterns)
+        return new_patterns
+
+    def remove_patterns(self, patterns: list[str]) -> list[str]:
+        """Remove patterns from the profile. Returns list of actually removed patterns."""
+        removed = []
+        for pattern in patterns:
+            if pattern in self.patterns:
+                self.patterns.remove(pattern)
+                removed.append(pattern)
+        return removed
+
+    def to_dict(self) -> dict:
+        """Convert profile to dictionary for JSON storage."""
+        return {
+            "mode": self.mode,
+            "patterns": self.patterns
+        }
+
+    @classmethod
+    def from_dict(cls, name: str, data: dict) -> 'Profile':
+        """Create profile from JSON data."""
+        return cls(
+            name=name,
+            mode=data["mode"],
+            patterns=data.get("patterns", [])
+        )
+
+    def summary(self) -> str:
+        """Get a short summary of the profile."""
+        return f"{self.name} ({self.mode}, {len(self.patterns)} patterns)"
+
+    def details(self) -> str:
+        """Get detailed information about the profile."""
+        header = f"{self.name} ({self.mode} mode)"
+        if not self.patterns:
+            return f"{header}\n  No patterns defined"
+        patterns = '\n  '.join(self.patterns)
+        return f"{header}\n  {patterns}"
+
+
+class ProfileManager:
+    """Manages profiles stored in JSON format and keeps them in memory."""
+    def __init__(self):
+        self.config_dir = Path.home() / ".config" / "reposcope"
+        self.profiles_file = self.config_dir / "profiles.json"
+        self._ensure_config_dir()
+        self._profiles = self._load_profiles()
+
+    def _ensure_config_dir(self):
+        self.config_dir.mkdir(parents=True, exist_ok=True)
+        if not self.profiles_file.exists():
+            self._save_profiles({})
+
+    def _load_profiles(self):
+        try:
+            data = json.loads(self.profiles_file.read_text())
+            return {name: Profile.from_dict(name, profile_data) for name, profile_data in data.items()}
+        except json.JSONDecodeError as e:
+            raise ProfileError(f"Invalid profiles file format: {e}")
+        except Exception as e:
+            raise ProfileError(f"Failed to load profiles: {e}")
+
+    def _save_profiles(self, data=None):
+        try:
+            if data is None:
+                data = {name: profile.to_dict() for name, profile in self._profiles.items()}
+            self.profiles_file.write_text(json.dumps(data, indent=2))
+        except Exception as e:
+            raise ProfileError(f"Failed to save profiles: {e}")
+
+    def create(self, name, mode):
+        """Create a new profile."""
+        if name in self._profiles:
+            raise ProfileError(f"Profile '{name}' already exists")
+        profile = Profile(name=name, mode=mode)
+        self._profiles[name] = profile
+        self._save_profiles()
+        return profile
+
+    def get(self, name):
+        """Retrieve a profile by name."""
+        if name not in self._profiles:
+            raise ProfileError(f"Profile '{name}' not found")
+        return self._profiles[name]
+
+    def delete(self, name):
+        """Delete a profile by name."""
+        if name not in self._profiles:
+            raise ProfileError(f"Profile '{name}' not found")
+        del self._profiles[name]
+        self._save_profiles()
+
+    def get_profiles(self):
+        """List all profiles."""
+        return list(self._profiles.values())
+
+    def add_patterns(self, name, patterns):
+        """Add patterns to a profile."""
+        profile = self.get(name)
+        added = profile.add_patterns(patterns)
+        if added:
+            self._save_profiles()
+        return added
+
+    def remove_patterns(self, name, patterns):
+        """Remove patterns from a profile."""
+        profile = self.get(name)
+        removed = profile.remove_patterns(patterns)
+        if removed:
+            self._save_profiles()
+        return removed
+
+    def export_patterns(self, name, gitignore=False):
+        """Export patterns from a profile."""
+        profile = self.get(name)
+        header = f"# Profile: {profile.name} ({profile.mode} mode)\n"
+        patterns_list = profile.patterns
+        
+        # If gitignore is True, add trailing slash to directory patterns
+        if gitignore:
+            patterns_list = [p + '/' if not p.endswith('/') and '/' in p else p for p in patterns_list]
+        
+        return header + "\n".join(patterns_list)
+
+    def import_patterns(self, name, file_path, gitignore=False):
+        """Import patterns from a file."""
+        path = Path(file_path)
+        if not path.exists():
+            raise ProfileError(f"File not found: {file_path}")
+        
+        with open(path) as f:
+            # Filter out comments and blank lines
+            patterns = [line.strip() for line in f if line.strip() and not line.startswith('#')]
+            
+            # If gitignore is True, remove trailing slash from patterns
+            if gitignore:
+                patterns = [pattern.rstrip('/') for pattern in patterns]
+        
+        return self.add_patterns(name, patterns)
+
+--- test.res ---
+============================= test session starts ==============================
+platform linux -- Python 3.10.12, pytest-8.3.4, pluggy-1.5.0
+rootdir: /home/user920/Documents/projects/reposcope
+configfile: pyproject.toml
+plugins: anyio-4.6.0, cov-6.0.0
+collected 35 items
+
+tests/test_cli.py ..............                                         [ 40%]
+tests/test_profiles_integration.py ...                                   [ 48%]
+tests/test_profiles_unit.py ......                                       [ 65%]
+tests/test_reposcope.py ............                                     [100%]
+
+============================== 35 passed in 0.16s ==============================
+
+
+--- tests/test_cli.py ---
+#!/usr/bin/env python3
+import pytest
+import sys
+import os
+import tempfile
+import argparse
+from pathlib import Path
+from unittest.mock import patch, Mock, call
+
+from reposcope.cli import (
+    setup_parser, 
+    main, 
+    handle_scan, 
+    handle_profile,
+    setup_logging
+)
+from reposcope.profiles import ProfileManager, ProfileError
+
+class TestCLIParser:
+    @pytest.fixture
+    def parser(self):
+        """Create a parser for testing."""
+        return setup_parser()
+
+    def test_default_scan_arguments(self, parser):
+        """Test default arguments for scan command."""
+        # Parse minimal scan command
+        args = parser.parse_args(['scan'])
+        
+        assert args.command == 'scan'
+        assert args.dir == '.'
+        assert args.output == 'context.txt'
+        assert not args.verbose
+        assert not args.use_gitignore
+        assert args.ignore is None
+        assert args.ignore_file is None
+        assert args.include is None
+        assert args.include_file is None
+
+    def test_scan_with_all_options(self, parser):
+        """Test scan command with all possible options."""
+        args = parser.parse_args([
+            'scan', 
+            '-d', '/path/to/repo', 
+            '-o', 'custom_context.txt', 
+            '-v', 
+            '-g', 
+            '-x', '*.log', 'build/', 
+            '-X', 'exclude.txt', 
+            '-i', '*.py', 'src/', 
+            '-I', 'include.txt',
+            '-p', 'my_profile'
+        ])
+
+        assert args.command == 'scan'
+        assert args.dir == '/path/to/repo'
+        assert args.output == 'custom_context.txt'
+        assert args.verbose
+        assert args.use_gitignore
+        assert args.ignore == ['*.log', 'build/']
+        assert args.ignore_file == 'exclude.txt'
+        assert args.include == ['*.py', 'src/']
+        assert args.include_file == 'include.txt'
+        assert args.profile == 'my_profile'
+
+    def test_profile_create_command(self, parser):
+        """Test profile create command with required arguments."""
+        args = parser.parse_args(['profile', 'create', 'test_profile', '--mode', 'include'])
+        
+        assert args.command == 'profile'
+        assert args.action == 'create'
+        assert args.name == 'test_profile'
+        assert args.mode == 'include'
+
+    def test_profile_create_mode_choices(self, parser):
+        """Test profile create command mode choices."""
+        # Valid modes should pass
+        parser.parse_args(['profile', 'create', 'test_profile', '--mode', 'include'])
+        parser.parse_args(['profile', 'create', 'test_profile', '--mode', 'exclude'])
+
+        # Invalid mode should raise an error
+        with pytest.raises(SystemExit):
+            parser.parse_args(['profile', 'create', 'test_profile', '--mode', 'invalid'])
+
+    def test_profile_subcommands(self, parser):
+        """Test various profile subcommands."""
+        # Delete profile
+        args = parser.parse_args(['profile', 'delete', 'test_profile'])
+        assert args.command == 'profile'
+        assert args.action == 'delete'
+        assert args.name == 'test_profile'
+
+        # List profiles
+        args = parser.parse_args(['profile', 'list_profiles'])
+        assert args.command == 'profile'
+        assert args.action == 'list_profiles'
+
+        # Show profile
+        args = parser.parse_args(['profile', 'show', 'test_profile'])
+        assert args.command == 'profile'
+        assert args.action == 'show'
+        assert args.name == 'test_profile'
+
+        # Add patterns
+        args = parser.parse_args(['profile', 'add', 'test_profile', '*.py', 'src/'])
+        assert args.command == 'profile'
+        assert args.action == 'add'
+        assert args.name == 'test_profile'
+        assert args.patterns == ['*.py', 'src/']
+
+        # Remove patterns
+        args = parser.parse_args(['profile', 'remove', 'test_profile', '*.log', 'build/'])
+        assert args.command == 'profile'
+        assert args.action == 'remove'
+        assert args.name == 'test_profile'
+        assert args.patterns == ['*.log', 'build/']
+
+        # Import patterns
+        args = parser.parse_args(['profile', 'import', 'test_profile', 'patterns.txt', '--gitignore'])
+        assert args.command == 'profile'
+        assert args.action == 'import'
+        assert args.name == 'test_profile'
+        assert args.file == 'patterns.txt'
+        assert args.gitignore
+
+        # Export patterns
+        args = parser.parse_args(['profile', 'export', 'test_profile', '--gitignore'])
+        assert args.command == 'profile'
+        assert args.action == 'export'
+        assert args.name == 'test_profile'
+        assert args.gitignore
+
+
+class TestCLIFunctionality:
+    @pytest.fixture
+    def temp_repo(self):
+        """Create a temporary repository for testing."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo_dir = Path(temp_dir)
+
+            # Create directory structure
+            (repo_dir / "src").mkdir()
+            (repo_dir / "docs").mkdir()
+            (repo_dir / "build").mkdir()
+
+            # Create test files
+            (repo_dir / "src" / "main.py").write_text("print('main')")
+            (repo_dir / "src" / "utils.py").write_text("print('utils')")
+            (repo_dir / "docs" / "README.md").write_text("# Documentation")
+            (repo_dir / "build" / "output.log").write_text("build output")
+            
+            (repo_dir / ".gitignore").write_text("build/\n*.log")
+
+            yield repo_dir
+
+    @pytest.fixture
+    def mock_profile_manager(self):
+        """Fixture for creating a mock ProfileManager."""
+        return Mock(spec=ProfileManager)
+
+    def test_logging_setup(self, capsys):
+        """Test logging setup in different verbosity modes."""
+        # Verbose mode
+        setup_logging(True)
+        import logging
+        logger = logging.getLogger()
+        assert logger.level == logging.DEBUG
+
+        # Non-verbose mode
+        setup_logging(False)
+        assert logger.level == logging.WARNING
+
+    def test_main_no_arguments(self, monkeypatch):
+        """Test main function when no arguments are provided."""
+        # Mock sys.argv and parse_args to prevent actual parsing
+        with patch('sys.argv', ['reposcope']):
+            with patch('argparse.ArgumentParser.parse_args') as mock_parse:
+                with patch('reposcope.cli.handle_scan') as mock_handle_scan:
+                    # Simulate parsing arguments
+                    mock_parse.return_value = Mock(command='scan', verbose=False)
+                    
+                    # Call main
+                    main()
+                    
+                    # Verify that scan was called with inserted 'scan' argument
+                    mock_parse.assert_called_once()
+                    mock_handle_scan.assert_called_once()
+
+    def test_main_mixed_arguments(self, monkeypatch):
+        """Test main function with mixed/unknown arguments."""
+        test_cases = [
+            # Unknown first argument should insert 'scan'
+            ['reposcope', '-g'],
+            ['reposcope', '--output', 'custom.txt'],
+            ['reposcope', '-x', '*.log'],
+        ]
+
+        for argv in test_cases:
+            with patch('sys.argv', argv):
+                with patch('argparse.ArgumentParser.parse_args') as mock_parse:
+                    with patch('reposcope.cli.handle_scan') as mock_handle_scan:
+                        # Simulate parsing arguments
+                        mock_parse.return_value = Mock(command='scan', verbose=False)
+                        
+                        # Call main
+                        main()
+                        
+                        # Verify that scan was called with inserted argument
+                        mock_parse.assert_called_once()
+                        mock_handle_scan.assert_called_once()
+
+    def test_handle_scan_error_handling(self, mock_profile_manager, temp_repo):
+        """Test error handling in handle_scan function."""
+        # Prepare arguments
+        args = Mock(
+            dir=str(temp_repo),
+            output='context.txt',
+            profile=None,
+            use_gitignore=False,
+            include=None,
+            include_file=None,
+            ignore=None,
+            ignore_file=None
+        )
+
+        # Simulate an error in file generation
+        with patch('reposcope.core.RepoScope.generate_context_file') as mock_generate:
+            mock_generate.side_effect = Exception("Test error")
+            
+            with pytest.raises(SystemExit):
+                handle_scan(args, mock_profile_manager)
+
+    def test_handle_profile_error_handling(self, mock_profile_manager):
+        """Test error handling in handle_profile function."""
+        # Simulate various profile errors
+        error_test_cases = [
+            # Create profile that already exists
+            {
+                'action': 'create', 
+                'name': 'duplicate_profile', 
+                'mode': 'include',
+                'error': ProfileError("Profile already exists")
+            },
+            # Delete non-existent profile
+            {
+                'action': 'delete', 
+                'name': 'non_existent', 
+                'error': ProfileError("Profile not found")
+            },
+            # Add patterns to non-existent profile
+            {
+                'action': 'add', 
+                'name': 'non_existent', 
+                'patterns': ['*.py'], 
+                'error': ProfileError("Profile not found")
+            }
+        ]
+
+        for case in error_test_cases:
+            # Prepare mock arguments
+            args = Mock(
+                action=case['action'],
+                name=case.get('name'),
+                patterns=case.get('patterns', []),
+                mode=case.get('mode')
+            )
+
+            # Configure mock to raise the specific error
+            mock_profile_manager.create.side_effect = case['error']
+            mock_profile_manager.delete.side_effect = case['error']
+            mock_profile_manager.add_patterns.side_effect = case['error']
+
+            # Test that the error is logged and system exits
+            with pytest.raises(SystemExit):
+                handle_profile(args, mock_profile_manager)
+
+    @pytest.mark.parametrize("mode", ["include", "exclude"])
+    def test_handle_profile_commands(self, mock_profile_manager, mode):
+        """
+        Test 'create', 'delete', 'add', 'remove' subcommands in handle_profile
+        by letting the real parser set up the arguments.
+        """
+        from reposcope.cli import setup_parser
+
+        test_cases = [
+            {
+                "action": "create",
+                "setup_method": "create",
+                "cli_args": ["profile", "create", "test_profile", "--mode", mode],
+                "expect_call": ("test_profile", mode),
+                "output_check": f"Created profile: test_profile ({mode}, 0 patterns)"
+            },
+            {
+                "action": "delete",
+                "setup_method": "delete",
+                "cli_args": ["profile", "delete", "test_profile"],
+                "expect_call": ("test_profile",),
+                "output_check": "Deleted profile: test_profile"
+            },
+            {
+                "action": "add",
+                "setup_method": "add_patterns",
+                "cli_args": ["profile", "add", "test_profile", "*.py", "src/"],
+                "expect_call": ("test_profile", ["*.py", "src/"]),
+                "output_check": "Added to test_profile:"
+            },
+            {
+                "action": "remove",
+                "setup_method": "remove_patterns",
+                "cli_args": ["profile", "remove", "test_profile", "*.log"],
+                "expect_call": ("test_profile", ["*.log"]),
+                "output_check": "Removed from test_profile:"
+            }
+        ]
+
+        for case in test_cases:
+            mock_profile_manager.reset_mock()
+
+            # Parse real CLI args so we get the same attribute names/values
+            parser = setup_parser()
+            parsed_args = parser.parse_args(case["cli_args"])
+            setup_method = getattr(mock_profile_manager, case["setup_method"])
+
+            # Mock return values for create/add/remove if needed
+            if case["action"] == "create":
+                mock_profile = Mock()
+                mock_profile.name = "test_profile"
+                mock_profile.mode = mode
+                mock_profile.summary.return_value = f"test_profile ({mode}, 0 patterns)"
+                setup_method.return_value = mock_profile
+            elif case["action"] in ["add", "remove"]:
+                setup_method.return_value = case["expect_call"][1]  # e.g. ["*.py", "src/"]
+
+            # Invoke handle_profile with actual parsed_args
+            with patch("builtins.print") as mock_print:
+                handle_profile(parsed_args, mock_profile_manager)
+
+            # Verify the mock method call
+            setup_method.assert_called_once_with(*case["expect_call"])
+
+            # Check console output
+            assert any(
+                case["output_check"] in call[0][0]
+                for call in mock_print.call_args_list
+            )
+
+
+@pytest.mark.parametrize("mode,patterns", [
+    ('include', ['*.py', 'src/']),
+    ('exclude', ['*.log', 'build/'])
+])
+def test_profile_edge_cases(mode, patterns):
+    """Test edge cases for profile creation and manipulation."""
+    manager = ProfileManager()
+
+    # Create profile
+    profile = manager.create(f'test_{mode}_profile', mode)
+    assert profile.name == f'test_{mode}_profile'
+    assert profile.mode == mode
+    assert profile.patterns == []
+
+    # Add patterns
+    added = manager.add_patterns(profile.name, patterns)
+    assert added == patterns
+    assert profile.patterns == patterns
+
+    # Attempt to add duplicate patterns
+    duplicate_added = manager.add_patterns(profile.name, patterns)
+    assert duplicate_added == []
+
+    # Remove patterns
+    removed = manager.remove_patterns(profile.name, [patterns[0]])
+    assert removed == [patterns[0]]
+    assert patterns[1] in profile.patterns
+
+    # Attempt to remove non-existent pattern
+    non_exist_removed = manager.remove_patterns(profile.name, ['non_existent'])
+    assert non_exist_removed == []
+
+    # Export patterns
+    exported = manager.export_patterns(profile.name)
+    assert f"{profile.name} ({mode} mode)" in exported
+
+    # Cleanup
+    manager.delete(profile.name)
+    with pytest.raises(ProfileError):
+        manager.get(profile.name)
+
+--- tests/test_profiles_integration.py ---
+import pytest
+import tempfile
+from pathlib import Path
+from reposcope.core import RepoScope
+from reposcope.profiles import ProfileManager
+
+@pytest.fixture
+def temp_repo():
+    """Create a temporary repository with test files."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        repo_dir = Path(temp_dir)
+
+        # Create directory structure
+        (repo_dir / "src").mkdir()
+        (repo_dir / "docs").mkdir()
+        (repo_dir / "build").mkdir()
+
+        # Create test files
+        (repo_dir / "src" / "main.py").write_text("print('main')")
+        (repo_dir / "src" / "utils.py").write_text("print('utils')")
+        (repo_dir / "docs" / "README.md").write_text("# Documentation")
+        (repo_dir / "build" / "output.log").write_text("build output")
+
+        yield repo_dir
+
+@pytest.fixture
+def profile_manager(monkeypatch):
+    """Fixture for a clean ProfileManager with isolated config directory."""
+    temp_dir = tempfile.TemporaryDirectory()
+
+    def mock_ensure_config_dir(self):
+        self.config_dir = Path(temp_dir.name)
+        self.profiles_file = self.config_dir / "profiles.json"
+        self.config_dir.mkdir(parents=True, exist_ok=True)
+        if not self.profiles_file.exists():
+            self.profiles_file.write_text("{}")
+
+    # Patch the `_ensure_config_dir` method
+    monkeypatch.setattr(ProfileManager, "_ensure_config_dir", mock_ensure_config_dir)
+
+    # Instantiate the ProfileManager
+    manager = ProfileManager()
+    yield manager
+
+    # Cleanup temporary directory
+    temp_dir.cleanup()
+
+
+
+def test_profile_integration_include(temp_repo, profile_manager):
+    """Test using an include profile with RepoScope."""
+    profile = profile_manager.create("include_profile", "include")
+    profile_manager.add_patterns("include_profile", ["src/*.py", "docs/*.md"])
+
+    scope = RepoScope(temp_repo)
+    scope.use_include_patterns(profile.patterns)
+
+    collected_files = {str(f.relative_to(temp_repo)) for f in scope.collect_files()}
+
+    assert "src/main.py" in collected_files
+    assert "src/utils.py" in collected_files
+    assert "docs/README.md" in collected_files
+
+    # Files not in include patterns should be excluded
+    assert "build/output.log" not in collected_files
+
+def test_profile_integration_exclude(temp_repo, profile_manager):
+    """Test using an exclude profile with RepoScope."""
+    profile = profile_manager.create("exclude_profile", "exclude")
+    profile_manager.add_patterns("exclude_profile", ["build/*", "*.log"])
+
+    scope = RepoScope(temp_repo)
+    scope.use_ignore_patterns(profile.patterns)
+
+    collected_files = {str(f.relative_to(temp_repo)) for f in scope.collect_files()}
+
+    # Excluded files should not be present
+    assert "build/output.log" not in collected_files
+
+    # Included files
+    assert "src/main.py" in collected_files
+    assert "src/utils.py" in collected_files
+    assert "docs/README.md" in collected_files
+
+def test_profile_integration_gitignore_and_profile(temp_repo, profile_manager):
+    """Test combining .gitignore and an exclude profile."""
+    gitignore_file = temp_repo / ".gitignore"
+    gitignore_file.write_text("*.log\n")
+
+    profile = profile_manager.create("exclude_profile", "exclude")
+    profile_manager.add_patterns("exclude_profile", ["docs/*"])
+
+    scope = RepoScope(temp_repo)
+    scope.use_gitignore()
+    scope.use_ignore_patterns(profile.patterns)
+
+    collected_files = {str(f.relative_to(temp_repo)) for f in scope.collect_files()}
+
+    # Excluded by gitignore and profile
+    assert "build/output.log" not in collected_files
+    assert "docs/README.md" not in collected_files
+
+    # Included files
+    assert "src/main.py" in collected_files
+    assert "src/utils.py" in collected_files
+
+
+--- tests/test_profiles_unit.py ---
+import pytest
+import tempfile
+import os
+from pathlib import Path
+from reposcope.profiles import ProfileManager, ProfileError
+
+def create_temp_file(content):
+    """Helper function to create a temporary file with given content."""
+    temp_file = tempfile.NamedTemporaryFile(delete=False, mode="w")
+    temp_file.write(content)
+    temp_file.close()
+    return temp_file.name
+
+@pytest.fixture
+def profile_manager(monkeypatch):
+    """Fixture for a clean ProfileManager with isolated config directory."""
+    temp_dir = tempfile.TemporaryDirectory()
+
+    def mock_ensure_config_dir(self):
+        self.config_dir = Path(temp_dir.name)
+        self.profiles_file = self.config_dir / "profiles.json"
+        self.config_dir.mkdir(parents=True, exist_ok=True)
+        if not self.profiles_file.exists():
+            self.profiles_file.write_text("{}")
+
+    # Patch the `_ensure_config_dir` method
+    monkeypatch.setattr(ProfileManager, "_ensure_config_dir", mock_ensure_config_dir)
+
+    # Instantiate the ProfileManager
+    manager = ProfileManager()
+    yield manager
+
+    # Cleanup temporary directory
+    temp_dir.cleanup()
+
+
+
+def test_create_profile(profile_manager):
+    """Test creating a new profile."""
+    profile = profile_manager.create("test_profile", "include")
+    assert profile.name == "test_profile"
+    assert profile.mode == "include"
+    assert profile.patterns == []
+
+    # Ensure profile is saved and retrievable
+    retrieved = profile_manager.get("test_profile")
+    assert retrieved.name == "test_profile"
+    assert retrieved.mode == "include"
+
+
+def test_add_remove_patterns(profile_manager):
+    """Test adding and removing patterns from a profile."""
+    profile = profile_manager.create("test_profile", "exclude")
+
+    # Add patterns
+    added = profile_manager.add_patterns("test_profile", ["*.py", "docs/*"])
+    assert added == ["*.py", "docs/*"]
+    assert profile.patterns == ["*.py", "docs/*"]
+
+    # Remove patterns
+    removed = profile_manager.remove_patterns("test_profile", ["docs/*"])
+    assert removed == ["docs/*"]
+    assert profile.patterns == ["*.py"]
+
+
+def test_import_patterns(profile_manager):
+    """Test importing patterns from a file."""
+    profile = profile_manager.create("test_profile", "include")
+
+    temp_file = create_temp_file("*.md\nlogs/*\n")
+    added = profile_manager.import_patterns("test_profile", temp_file, gitignore=False)
+
+    assert added == ["*.md", "logs/*"]
+    assert profile.patterns == ["*.md", "logs/*"]
+
+    os.unlink(temp_file)
+
+
+def test_export_patterns(profile_manager):
+    """Test exporting patterns from a profile."""
+    profile = profile_manager.create("test_profile", "exclude")
+    profile_manager.add_patterns("test_profile", ["*.log", "cache/*"])
+
+    exported = profile_manager.export_patterns("test_profile", gitignore=True)
+    assert "# Profile: test_profile (exclude mode)" in exported
+    assert "*.log" in exported
+    assert "cache/*" in exported
+
+
+def test_delete_profile(profile_manager):
+    """Test deleting a profile."""
+    profile_manager.create("test_profile", "include")
+
+    profile_manager.delete("test_profile")
+
+    with pytest.raises(ProfileError, match="Profile 'test_profile' not found"):
+        profile_manager.get("test_profile")
+
+
+def test_list_profiles(profile_manager):
+    """Test listing all profiles."""
+    profile_manager.create("profile1", "include")
+    profile_manager.create("profile2", "exclude")
+
+    profiles = profile_manager.get_profiles()
+    assert len(profiles) == 2
+    assert profiles[0].name == "profile1"
+    assert profiles[1].name == "profile2"
+
+
 --- tests/test_reposcope.py ---
 import pytest
 import os
+import logging
 from pathlib import Path
 import tempfile
 import shutil
 from reposcope.core import RepoScope
+from reposcope.cli import main
+import sys
+from unittest.mock import patch
 
 @pytest.fixture
 def temp_repo():
@@ -793,3 +1831,119 @@ def test_empty_patterns(temp_repo):
     scope.use_include_patterns([])
     files2 = set(scope.collect_files())
     assert len(files2) == 0
+
+def test_cli_short_arguments(temp_repo, capsys):
+    """Test CLI with short argument versions."""
+    # Save current working directory
+    original_cwd = os.getcwd()
+    try:
+        # Change to temp_repo directory for tests
+        os.chdir(temp_repo)
+
+        # Test -g (--use-gitignore)
+        with patch.object(sys, 'argv', ['reposcope', '-g']):
+            main()
+            captured = capsys.readouterr()
+            assert "Generated context file: context.txt" in captured.out
+
+        # Test -i (--include)
+        with patch.object(sys, 'argv', ['reposcope', '-i', '*.py']):
+            main()
+            captured = capsys.readouterr()
+            assert "Generated context file: context.txt" in captured.out
+
+        # Test -o (--output)
+        output_file = "test_output.txt"
+        with patch.object(sys, 'argv', ['reposcope', '-g', '-o', output_file]):
+            main()
+            captured = capsys.readouterr()
+            assert f"Generated context file: {output_file}" in captured.out
+            assert os.path.exists(output_file)
+
+        # Test -v (--verbose)
+        with patch.object(sys, 'argv', ['reposcope', '-g', '-v']):
+            main()
+            captured = capsys.readouterr()
+            assert "DEBUG" in captured.err  # Check for debug output in stderr
+
+        # Test -d (--dir)
+        with patch.object(sys, 'argv', ['reposcope', '-d', str(temp_repo), '-g']):
+            main()
+            captured = capsys.readouterr()
+            assert "Generated context file: context.txt" in captured.out
+
+        # Test -X (--exclude-file/--ignore-file)
+        ignore_file = temp_repo / "custom_ignore.txt"
+        ignore_file.write_text("*.pyc")
+        with patch.object(sys, 'argv', ['reposcope', '-X', str(ignore_file)]):
+            main()
+            captured = capsys.readouterr()
+            assert "Generated context file: context.txt" in captured.out
+
+        # Test -x (--exclude/--ignore)
+        with patch.object(sys, 'argv', ['reposcope', '-x', '*.pyc', '*.pyo']):
+            main()
+            captured = capsys.readouterr()
+            assert "Generated context file: context.txt" in captured.out
+
+        # Test -I (--include-file)
+        include_file = temp_repo / "include.txt"
+        include_file.write_text("*.py")
+        with patch.object(sys, 'argv', ['reposcope', '-I', str(include_file)]):
+            main()
+            captured = capsys.readouterr()
+            assert "Generated context file: context.txt" in captured.out
+
+    finally:
+        # Restore original working directory
+        os.chdir(original_cwd)
+
+def test_cli_aliases(temp_repo, capsys):
+    """Test command line argument aliases."""
+    original_cwd = os.getcwd()
+    try:
+        os.chdir(temp_repo)
+
+        # Test --exclude alias for --ignore
+        with patch.object(sys, 'argv', ['reposcope', '--exclude', '*.pyc']):
+            main()
+            captured = capsys.readouterr()
+            assert "Generated context file: context.txt" in captured.out
+
+        # Test --exclude-file alias for --ignore-file
+        ignore_file = temp_repo / "custom_ignore.txt"
+        ignore_file.write_text("*.pyc")
+        with patch.object(sys, 'argv', ['reposcope', '--exclude-file', str(ignore_file)]):
+            main()
+            captured = capsys.readouterr()
+            assert "Generated context file: context.txt" in captured.out
+
+    finally:
+        os.chdir(original_cwd)
+
+def test_cli_mixed_arguments(temp_repo, capsys):
+    """Test mixing different argument versions."""
+    original_cwd = os.getcwd()
+    try:
+        os.chdir(temp_repo)
+
+        # Mix short and long arguments
+        with patch.object(sys, 'argv', ['reposcope', '-g', '--output', 'out.txt']):
+            main()
+            captured = capsys.readouterr()
+            assert "Generated context file: out.txt" in captured.out
+
+        # Mix exclude and ignore
+        with patch.object(sys, 'argv', ['reposcope', '--exclude', '*.pyc', '--ignore', '*.pyo']):
+            main()
+            captured = capsys.readouterr()
+            assert "Generated context file: context.txt" in captured.out
+
+        # Mix verbose with different argument styles
+        with patch.object(sys, 'argv', ['reposcope', '--use-gitignore', '-v']):
+            main()
+            captured = capsys.readouterr()
+            assert "DEBUG" in captured.err
+
+    finally:
+        os.chdir(original_cwd)
