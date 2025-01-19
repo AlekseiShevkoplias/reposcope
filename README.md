@@ -83,6 +83,22 @@ Creates a `context.txt` file containing:
 - File tree structure
 - Full contents of selected files
 
+```
+Repository: my-project
+
+File Tree:
+└── src/main.py
+└── src/utils.py
+└── README.md
+
+File Contents:
+
+--- src/main.py ---
+def main():
+    print("Hello World!")
+...
+```
+
 This output is ideal for:
 - Sharing code with AI assistants
 - Code reviews
