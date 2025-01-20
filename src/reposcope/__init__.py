@@ -1,6 +1,6 @@
 """RepoScope - Repository content collector for LLM context."""
 
-__version__ = "0.3.0"
+__version__ = "0.3.2"
 
 from reposcope.core import RepoScope
 
