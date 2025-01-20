@@ -1,6 +1,6 @@
 [project]
 name = "reposcope"
-version = "0.2.1"
+version = "0.3.2"
 description = "Collect repository files into a single document for easy sharing with AI assistants"
 readme = "README.md"
 authors = [
@@ -13,13 +13,18 @@ classifiers = [
     "Intended Audience :: Developers",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "License :: OSI Approved :: MIT License",
-    "Operating System :: POSIX :: Linux", 
+    "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.12"
 ]
+
+[project.urls]
+"Homepage" = "https://github.com/AlekseiShevkoplias/reposcope"
+"Bug Tracker" = "https://github.com/AlekseiShevkoplias/reposcope/issues"
+"Repository" = "https://github.com/AlekseiShevkoplias/reposcope.git"
 
 [project.scripts]
 reposcope = "reposcope.__main__:run_main"
@@ -31,5 +36,5 @@ build-backend = "hatchling.build"
 [project.optional-dependencies]
 dev = [
     "pytest>=8.3.4",
-    "pytest-cov>=6.0.0",
+    "pytest-cov>=6.0.0"
 ]
