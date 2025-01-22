@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import json
 from pathlib import Path
 import logging
@@ -99,13 +98,29 @@ class ProfileManager:
         except Exception as e:
             raise ProfileError(f"Failed to load profiles: {e}")
 
-    def _save_profiles(self, data=None):
+	def _save_profiles(self, data=None):
+	    """Save profiles atomically using a temporary file."""
+	    try:
+		if data is None:
+		    data = {name: profile.to_dict() for name, profile in self._profiles.items()}
+		
+		# Create temporary file in the same directory
+		tmp_file = self.profiles_file.with_suffix('.tmp')
+		
+		# Write to temporary file
+		tmp_file.write_text(json.dumps(data, indent=2))
+		
+		# Atomic rename
+		tmp_file.replace(self.profiles_file)
+            
+    except Exception as e:
+        # Clean up temp file if it exists
         try:
-            if data is None:
-                data = {name: profile.to_dict() for name, profile in self._profiles.items()}
-            self.profiles_file.write_text(json.dumps(data, indent=2))
-        except Exception as e:
-            raise ProfileError(f"Failed to save profiles: {e}")
+            if tmp_file.exists():
+                tmp_file.unlink()
+        except:
+            pass  # Ignore cleanup errors
+        raise ProfileError(f"Failed to save profiles: {e}")
 
     def create(self, name, mode):
         """Create a new profile."""
