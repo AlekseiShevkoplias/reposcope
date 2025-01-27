@@ -4,6 +4,7 @@ from pathlib import Path
 from reposcope.core import RepoScope
 from reposcope.profiles import ProfileManager
 
+
 @pytest.fixture
 def temp_repo():
     """Create a temporary repository with test files."""
@@ -22,6 +23,7 @@ def temp_repo():
         (repo_dir / "build" / "output.log").write_text("build output")
 
         yield repo_dir
+
 
 @pytest.fixture
 def profile_manager(monkeypatch):
@@ -46,7 +48,6 @@ def profile_manager(monkeypatch):
     temp_dir.cleanup()
 
 
-
 def test_profile_integration_include(temp_repo, profile_manager):
     """Test using an include profile with RepoScope."""
     profile = profile_manager.create("include_profile", "include")
@@ -63,6 +64,7 @@ def test_profile_integration_include(temp_repo, profile_manager):
 
     # Files not in include patterns should be excluded
     assert "build/output.log" not in collected_files
+
 
 def test_profile_integration_exclude(temp_repo, profile_manager):
     """Test using an exclude profile with RepoScope."""
@@ -81,6 +83,7 @@ def test_profile_integration_exclude(temp_repo, profile_manager):
     assert "src/main.py" in collected_files
     assert "src/utils.py" in collected_files
     assert "docs/README.md" in collected_files
+
 
 def test_profile_integration_gitignore_and_profile(temp_repo, profile_manager):
     """Test combining .gitignore and an exclude profile."""

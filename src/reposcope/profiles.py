@@ -1,20 +1,21 @@
-#!/usr/bin/env python3
 import json
 from pathlib import Path
 import logging
-import shutil
-import tempfile
 
 logger = logging.getLogger(__name__)
 
+
 class ProfileError(Exception):
     """Base exception for profile-related errors."""
+
     pass
+
 
 class Profile:
     """A profile that stores include/exclude patterns."""
+
     def __init__(self, name: str, mode: str, patterns: list[str] = None):
-        if mode not in ('include', 'exclude'):
+        if mode not in ("include", "exclude"):
             raise ProfileError(f"Invalid mode: {mode}. Must be 'include' or 'exclude'")
         self.name = name
         self.mode = mode
@@ -38,19 +39,12 @@ class Profile:
 
     def to_dict(self) -> dict:
         """Convert profile to dictionary for JSON storage."""
-        return {
-            "mode": self.mode,
-            "patterns": self.patterns
-        }
+        return {"mode": self.mode, "patterns": self.patterns}
 
     @classmethod
-    def from_dict(cls, name: str, data: dict) -> 'Profile':
+    def from_dict(cls, name: str, data: dict) -> "Profile":
         """Create profile from JSON data."""
-        return cls(
-            name=name,
-            mode=data["mode"],
-            patterns=data.get("patterns", [])
-        )
+        return cls(name=name, mode=data["mode"], patterns=data.get("patterns", []))
 
     def summary(self) -> str:
         """Get a short summary of the profile."""
@@ -61,17 +55,18 @@ class Profile:
         header = f"{self.name} ({self.mode} mode)"
         if not self.patterns:
             return f"{header}\n  No patterns defined"
-        patterns = '\n  '.join(self.patterns)
+        patterns = "\n  ".join(self.patterns)
         return f"{header}\n  {patterns}"
 
 
 class ProfileManager:
     """Manages profiles stored in JSON format and keeps them in memory."""
+
     def __init__(self, config_dir=None):
         # Use a temporary directory for config during tests
         if config_dir is None:
             config_dir = Path.home() / ".config" / "reposcope"
-        
+
         self.config_dir = config_dir
         self.profiles_file = self.config_dir / "profiles.json"
         self._ensure_config_dir()
@@ -87,11 +82,11 @@ class ProfileManager:
         try:
             # Start with an empty dict each time
             self._profiles = {}
-            
+
             if self.profiles_file.exists():
                 data = json.loads(self.profiles_file.read_text())
                 self._profiles = {
-                    name: Profile.from_dict(name, profile_data) 
+                    name: Profile.from_dict(name, profile_data)
                     for name, profile_data in data.items()
                 }
         except json.JSONDecodeError as e:
@@ -100,18 +95,36 @@ class ProfileManager:
             raise ProfileError(f"Failed to load profiles: {e}")
 
     def _save_profiles(self, data=None):
+        """Save profiles atomically using a temporary file."""
         try:
             if data is None:
-                data = {name: profile.to_dict() for name, profile in self._profiles.items()}
-            self.profiles_file.write_text(json.dumps(data, indent=2))
+                data = {
+                    name: profile.to_dict() for name, profile in self._profiles.items()
+                }
+
+            # Create temporary file in the same directory
+            tmp_file = self.profiles_file.with_suffix(".tmp")
+
+            # Write to temporary file
+            tmp_file.write_text(json.dumps(data, indent=2))
+
+            # Atomic rename
+            tmp_file.replace(self.profiles_file)
+
         except Exception as e:
+            # Clean up temp file if it exists
+            try:
+                if tmp_file.exists():
+                    tmp_file.unlink()
+            except:
+                pass  # Ignore cleanup errors
             raise ProfileError(f"Failed to save profiles: {e}")
 
     def create(self, name, mode):
         """Create a new profile."""
         # First, ensure a clean slate by reloading
         self._load_profiles()
-        
+
         if name in self._profiles:
             raise ProfileError(f"Profile '{name}' already exists")
         profile = Profile(name=name, mode=mode)
@@ -156,7 +169,7 @@ class ProfileManager:
         """Export patterns from a profile."""
         profile = self.get(name)
         header = f"# Profile: {profile.name} ({profile.mode} mode)\n"
-        
+
         return header + "\n".join(profile.patterns)
 
     def import_patterns(self, name, file_path):
@@ -164,13 +177,11 @@ class ProfileManager:
         path = Path(file_path)
         if not path.exists():
             raise ProfileError(f"File not found: {file_path}")
-        
+
         with open(path) as f:
             # Filter out comments and blank lines
             patterns = [
-                line.strip() 
-                for line in f 
-                if line.strip() and not line.startswith('#')
+                line.strip() for line in f if line.strip() and not line.startswith("#")
             ]
-        
+
         return self.add_patterns(name, patterns)

@@ -12,3 +12,6 @@ wheels/
 
 # Git
 .git
+
+# Data
+*.txt
