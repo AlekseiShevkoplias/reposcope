@@ -6,6 +6,7 @@ import fnmatch
 
 logger = logging.getLogger(__name__)
 
+
 class RepoScope:
     def __init__(self, root_dir: str):
         self.root_dir = Path(root_dir).resolve()
@@ -18,42 +19,44 @@ class RepoScope:
         Process a single pattern according to .gitignore rules.
         Returns a list of tuples (pattern, is_negated) for each processed variant.
         """
-        if not pattern or pattern.startswith('#'):
+        if not pattern or pattern.startswith("#"):
             return []
 
         # Handle negation
-        is_negated = pattern.startswith('!')
+        is_negated = pattern.startswith("!")
         if is_negated:
             pattern = pattern[1:].strip()  # Remove ! and any extra whitespace
             if not pattern:  # If pattern is just "!" or "! " etc.
                 return []
 
         patterns = []
-        
+
         # Handle directory patterns
-        if pattern.endswith('/'):
+        if pattern.endswith("/"):
             pattern = pattern[:-1]
-            patterns.extend([
-                pattern,            # Match the directory itself
-                f"{pattern}/*",     # Match direct children
-                f"{pattern}/**/*"   # Match all descendants
-            ])
+            patterns.extend(
+                [
+                    pattern,  # Match the directory itself
+                    f"{pattern}/*",  # Match direct children
+                    f"{pattern}/**/*",  # Match all descendants
+                ]
+            )
         else:
             patterns.append(pattern)
 
         # If pattern doesn't start with /, add **/ variant
-        if not pattern.startswith('/'):
+        if not pattern.startswith("/"):
             base_patterns = patterns.copy()
             for p in base_patterns:
                 if not any(p.startswith(prefix) for prefix in ["**/", "**"]):
                     patterns.append(f"**/{p}")
 
         # If pattern starts with /, remove it as we're using relative paths
-        return [(p[1:] if p.startswith('/') else p, is_negated) for p in patterns]
+        return [(p[1:] if p.startswith("/") else p, is_negated) for p in patterns]
 
-    def use_gitignore(self) -> 'RepoScope':
+    def use_gitignore(self) -> "RepoScope":
         """Load patterns from .gitignore file."""
-        gitignore_path = self.root_dir / '.gitignore'
+        gitignore_path = self.root_dir / ".gitignore"
         if gitignore_path.exists():
             logger.info(f"Loading patterns from .gitignore: {gitignore_path}")
             self._load_patterns_from_file(gitignore_path)
@@ -61,7 +64,7 @@ class RepoScope:
             logger.warning(f"No .gitignore found in {self.root_dir}")
         return self
 
-    def use_ignore_patterns(self, patterns: List[str]) -> 'RepoScope':
+    def use_ignore_patterns(self, patterns: List[str]) -> "RepoScope":
         """Add ignore patterns directly."""
         if patterns:
             logger.info(f"Adding ignore patterns: {patterns}")
@@ -69,10 +72,12 @@ class RepoScope:
                 processed_patterns = self._process_gitignore_pattern(pattern)
                 for p, n in processed_patterns:
                     self.patterns.append((p, n))
-                    logger.debug(f"Pattern '{pattern}' {'(negated) ' if n else ''}expanded to: {p}")
+                    logger.debug(
+                        f"Pattern '{pattern}' {'(negated) ' if n else ''}expanded to: {p}"
+                    )
         return self
 
-    def use_ignore_file(self, ignore_file: str) -> 'RepoScope':
+    def use_ignore_file(self, ignore_file: str) -> "RepoScope":
         """Load patterns from specified ignore file using .gitignore rules."""
         ignore_path = Path(ignore_file)
         if ignore_path.exists():
@@ -82,7 +87,7 @@ class RepoScope:
             logger.warning(f"Ignore file not found: {ignore_path}")
         return self
 
-    def use_include_patterns(self, patterns: List[str]) -> 'RepoScope':
+    def use_include_patterns(self, patterns: List[str]) -> "RepoScope":
         """Switch to include mode and use specified patterns."""
         logger.info(f"Switching to include mode with patterns: {patterns}")
         self.is_include_mode = True
@@ -92,10 +97,12 @@ class RepoScope:
                 processed_patterns = self._process_gitignore_pattern(pattern)
                 for p, n in processed_patterns:
                     self.patterns.append((p, n))
-                    logger.debug(f"Pattern '{pattern}' {'(negated) ' if n else ''}expanded to: {p}")
+                    logger.debug(
+                        f"Pattern '{pattern}' {'(negated) ' if n else ''}expanded to: {p}"
+                    )
         return self
 
-    def use_include_file(self, include_file: str) -> 'RepoScope':
+    def use_include_file(self, include_file: str) -> "RepoScope":
         """Switch to include mode and load patterns from include file."""
         self.is_include_mode = True
         self.patterns = []  # Clear existing patterns
@@ -110,15 +117,17 @@ class RepoScope:
     def _load_patterns_from_file(self, file_path: Path):
         """Load and process patterns from a file according to .gitignore rules."""
         patterns_before = len(self.patterns)
-        with open(file_path, 'r') as f:
+        with open(file_path, "r") as f:
             for line in f:
                 pattern = line.strip()
                 processed_patterns = self._process_gitignore_pattern(pattern)
                 for p, n in processed_patterns:
                     self.patterns.append((p, n))
                     if processed_patterns:  # Only log if pattern was valid
-                        logger.debug(f"Pattern '{pattern}' {'(negated) ' if n else ''}expanded to: {p}")
-        
+                        logger.debug(
+                            f"Pattern '{pattern}' {'(negated) ' if n else ''}expanded to: {p}"
+                        )
+
         patterns_added = len(self.patterns) - patterns_before
         logger.debug(f"Loaded {patterns_added} patterns from {file_path}")
 
@@ -133,14 +142,16 @@ class RepoScope:
 
         # Add trailing slash for directory matching
         rel_path_with_slash = f"{rel_path}/"
-        
+
         # In exclude mode, directories are skipped if they match any non-negated pattern
         # and don't match any subsequent negated pattern
         is_skipped = False
         for pattern, is_negated in self.patterns:
-            if fnmatch.fnmatch(rel_path, pattern) or fnmatch.fnmatch(rel_path_with_slash, pattern):
+            if fnmatch.fnmatch(rel_path, pattern) or fnmatch.fnmatch(
+                rel_path_with_slash, pattern
+            ):
                 is_skipped = not is_negated  # Flip skip status based on negation
-        
+
         if is_skipped:
             logger.debug(f"Skipping directory {rel_path}")
         return is_skipped
@@ -148,19 +159,19 @@ class RepoScope:
     def _should_include_file(self, file_path: Path) -> bool:
         """
         Determine if a file should be included based on current mode and patterns.
-        
+
         In exclude mode:
             - Files are included by default
             - Files matching non-negated patterns are excluded
             - Files matching negated patterns are re-included
-        
+
         In include mode:
             - Files are excluded by default
             - Files matching non-negated patterns are included
             - Files matching negated patterns are re-excluded
         """
         rel_path = str(file_path.relative_to(self.root_dir))
-        
+
         # Always skip .git directory
         if ".git/" in f"{rel_path}/":
             return False
@@ -171,7 +182,7 @@ class RepoScope:
             for pattern, is_negated in self.patterns:
                 if fnmatch.fnmatch(rel_path, pattern):
                     is_included = not is_negated
-            
+
             if is_included:
                 logger.debug(f"Including file {rel_path} (matched include pattern)")
             return is_included
@@ -181,26 +192,30 @@ class RepoScope:
             for pattern, is_negated in self.patterns:
                 if fnmatch.fnmatch(rel_path, pattern):
                     is_included = is_negated
-            
+
             if not is_included:
                 logger.debug(f"Excluding file {rel_path} (matched exclude pattern)")
             return is_included
 
     def collect_files(self) -> List[Path]:
         """Collect all files based on current configuration."""
-        logger.info(f"Starting file collection in {'include' if self.is_include_mode else 'exclude'} mode")
+        logger.info(
+            f"Starting file collection in {'include' if self.is_include_mode else 'exclude'} mode"
+        )
         if self.patterns:
             logger.info("Current patterns:")
             for pattern, is_negated in self.patterns:
                 logger.info(f"  {'!' if is_negated else ' '}{pattern}")
-        
+
         included_files = []
-        
+
         for root, dirs, files in os.walk(self.root_dir, topdown=True):
             root_path = Path(root)
 
             # Modify dirs in-place to skip directories based on patterns
-            dirs[:] = [d for d in dirs if not self._should_skip_directory(root_path / d)]
+            dirs[:] = [
+                d for d in dirs if not self._should_skip_directory(root_path / d)
+            ]
 
             for file in files:
                 file_path = root_path / file
@@ -214,18 +229,18 @@ class RepoScope:
         """Generate the context file with directory tree and file contents."""
         logger.info(f"Generating context file: {output_file}")
         files = self.collect_files()
-        
-        with open(output_file, 'w') as f:
+
+        with open(output_file, "w") as f:
             # Write root directory name
             f.write(f"Repository: {self.root_dir.name}\n\n")
-            
+
             # Write file tree
             f.write("File Tree:\n")
             for file in sorted(files):
                 rel_path = file.relative_to(self.root_dir)
                 f.write(f"└── {rel_path}\n")
             f.write("\n")
-            
+
             # Write file contents
             f.write("File Contents:\n")
             written_files = 0
@@ -233,7 +248,7 @@ class RepoScope:
                 rel_path = file.relative_to(self.root_dir)
                 f.write(f"\n--- {rel_path} ---\n")
                 try:
-                    with open(file, 'r') as content_file:
+                    with open(file, "r") as content_file:
                         f.write(content_file.read())
                     written_files += 1
                 except UnicodeDecodeError:
@@ -243,5 +258,5 @@ class RepoScope:
                     f.write(f"[Error reading file: {str(e)}]\n")
                     logger.error(f"Error reading file {rel_path}: {str(e)}")
                 f.write("\n")
-        
+
         logger.info(f"Successfully wrote {written_files} files to {output_file}")

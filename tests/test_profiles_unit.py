@@ -4,12 +4,14 @@ import os
 from pathlib import Path
 from reposcope.profiles import ProfileManager, ProfileError
 
+
 def create_temp_file(content):
     """Helper function to create a temporary file with given content."""
     temp_file = tempfile.NamedTemporaryFile(delete=False, mode="w")
     temp_file.write(content)
     temp_file.close()
     return temp_file.name
+
 
 @pytest.fixture
 def profile_manager(monkeypatch):
@@ -32,7 +34,6 @@ def profile_manager(monkeypatch):
 
     # Cleanup temporary directory
     temp_dir.cleanup()
-
 
 
 def test_create_profile(profile_manager):
