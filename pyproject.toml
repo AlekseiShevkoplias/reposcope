@@ -1,6 +1,6 @@
 [project]
 name = "reposcope"
-version = "0.3.3"
+version = "0.3.4"
 description = "Collect repository files into a single document for easy sharing with AI assistants"
 readme = "README.md"
 authors = [

@@ -109,7 +109,15 @@ RepoScope uses .gitignore-style pattern matching:
 - `**` matches directories: `src/**/*.py` matches all Python files under src
 - `/` at start matches from root: `/test.py` only matches in root
 - `/` at end matches directories: `build/` matches directory and contents
-- `!` negates pattern: `!test_*.py` excludes test files
+- `!` negates pattern: `!test_*.py` excludes test files. 
+
+> ⚠ WARNING! In Linux (and other Unix-like shells like Bash, Zsh), the ! character has special meaning - it's used for history expansion. This means:
+
+ - Direct use of ! often fails: Using !pattern directly will typically be interpreted by the shell before it gets to your program.
+ Quoting is required: You generally need to quote the ! character to prevent shell interpretation:
+ - Single quotes: '!pattern' (most reliable)
+ - Escaped: \!pattern (works in some shells)
+ - Double quotes with escaping: "\!pattern" (needed in some contexts)
 
 ### Pattern Symmetry
 
@@ -117,10 +125,10 @@ Include and exclude modes are imcompatible (you have to pick one for one use!) b
 ```bash
 # These do opposite things:
 reposcope -i "*.py"           # Only Python files
-reposcope -x "!*.py"          # Everything except Python files
+reposcope -x '!*.py'          # Everything except Python files
 
 # These are equivalent:
-reposcope -x "*" "!*.py"      # Exclude all but Python
+reposcope -x "*" '!*.py'      # Exclude all but Python
 reposcope -i "*.py"           # Include only Python
 ```
 
@@ -263,7 +271,7 @@ Profiles are stored in `~/.config/reposcope/profiles.json`. Each profile maintai
    # Add source files
    reposcope profile add dev "src/**/*.py"
    # Add test files but exclude integration tests
-   reposcope profile add dev "tests/" "!tests/integration/"
+   reposcope profile add dev "tests/" '!tests/integration/'
    # Add documentation
    reposcope profile add dev "*.md" "docs/"
    ```
@@ -287,7 +295,7 @@ Profiles are stored in `~/.config/reposcope/profiles.json`. Each profile maintai
    # Include examples and tutorials
    reposcope profile add docs "docs/" "examples/" "tutorials/"
    # Exclude work in progress
-   reposcope profile add docs "!**/draft/" "!**/*_wip.*"
+   reposcope profile add docs '!**/draft/' '!**/*_wip.*'
    ```
 
 ## More Examples
@@ -295,7 +303,7 @@ Profiles are stored in `~/.config/reposcope/profiles.json`. Each profile maintai
 ### AI Code Review
 ```bash
 # Share source and tests, exclude temporary files
-reposcope -i "src/**/*.py" "tests/**/*.py" "!**/tmp/*"
+reposcope -i "src/**/*.py" "tests/**/*.py" '!**/tmp/*'
 
 # Everything except build artifacts and caches
 reposcope -g -x "*.pyc" "**/__pycache__/"
@@ -307,7 +315,7 @@ reposcope -g -x "*.pyc" "**/__pycache__/"
 reposcope -i "**/*.md" "docs/" "examples/"
 
 # Share docs but exclude drafts
-reposcope -i "docs/" "!docs/drafts/"
+reposcope -i "docs/" '!docs/drafts/'
 ```
 
 ### Pro Tips
@@ -318,19 +326,19 @@ reposcope -i "docs/" "!docs/drafts/"
 
 2. Override .gitignore exclusions:
    ```bash
-   reposcope -g -x "!build/important.txt"
+   reposcope -g -x '!build/important.txt'
    ```
 
 3. Use directory patterns effectively:
    ```bash
    # All files in src except tests
-   reposcope -i "src/" "!src/tests/"
+   reposcope -i "src/" '!src/tests/'
    ```
 
 4. Chain patterns for complex selections:
    ```bash
    # Python files except tests, plus documentation
-   reposcope -i "*.py" "!test_*.py" "docs/*.md"
+   reposcope -i "*.py" '!test_*.py' "docs/*.md"
    ```
 
 ## Development
@@ -348,12 +356,8 @@ reposcope -i "docs/" "!docs/drafts/"
 ## Limitations
 - Currently Linux-only
 - Requires Python 3.9+
-- Large repositories might generate very big context files
+- Large repositories might generate very big context files. Proceed carefully. (However, it does skip binary files)
 
 ## License
 
 MIT License
-
-## Contributing
-
-Contributions are welcome! Open issues or pull requests on the project repository.
