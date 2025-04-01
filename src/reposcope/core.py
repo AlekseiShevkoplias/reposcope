@@ -143,14 +143,17 @@ class RepoScope:
         # Add trailing slash for directory matching
         rel_path_with_slash = f"{rel_path}/"
 
-        # In exclude mode, directories are skipped if they match any non-negated pattern
-        # and don't match any subsequent negated pattern
+        # Start with the default (not skipped)
         is_skipped = False
+
+        # Apply patterns in order, with later patterns overriding earlier ones
         for pattern, is_negated in self.patterns:
             if fnmatch.fnmatch(rel_path, pattern) or fnmatch.fnmatch(
                 rel_path_with_slash, pattern
             ):
-                is_skipped = not is_negated  # Flip skip status based on negation
+                # If pattern matches, set skip status based on negation
+                # Negated pattern means "don't skip"
+                is_skipped = not is_negated
 
         if is_skipped:
             logger.debug(f"Skipping directory {rel_path}")
@@ -160,15 +163,9 @@ class RepoScope:
         """
         Determine if a file should be included based on current mode and patterns.
 
-        In exclude mode:
-            - Files are included by default
-            - Files matching non-negated patterns are excluded
-            - Files matching negated patterns are re-included
-
-        In include mode:
-            - Files are excluded by default
-            - Files matching non-negated patterns are included
-            - Files matching negated patterns are re-excluded
+        Applies gitignore-like rules where:
+        - Later patterns override earlier ones
+        - Negated patterns explicitly include files that would otherwise be excluded
         """
         rel_path = str(file_path.relative_to(self.root_dir))
 
@@ -176,26 +173,28 @@ class RepoScope:
         if ".git/" in f"{rel_path}/":
             return False
 
-        if self.is_include_mode:
-            # Start with excluded in include mode
-            is_included = False
-            for pattern, is_negated in self.patterns:
-                if fnmatch.fnmatch(rel_path, pattern):
-                    is_included = not is_negated
+        # Default inclusion status depends on mode
+        is_included = not self.is_include_mode
+        last_matched_index = -1
 
-            if is_included:
-                logger.debug(f"Including file {rel_path} (matched include pattern)")
-            return is_included
+        # Apply patterns in order, remembering the last matching pattern
+        for i, (pattern, is_negated) in enumerate(self.patterns):
+            if fnmatch.fnmatch(rel_path, pattern):
+                # If this pattern matches, remember its index
+                last_matched_index = i
+                is_included = is_negated  # Negated = include, Non-negated = exclude
+
+        # If we matched any pattern, use the result from the last matching pattern
+        if last_matched_index >= 0:
+            _, is_negated = self.patterns[last_matched_index]
+            is_included = is_negated if not self.is_include_mode else not is_negated
+
+        if is_included:
+            logger.debug(f"Including file {rel_path}")
         else:
-            # Start with included in exclude mode
-            is_included = True
-            for pattern, is_negated in self.patterns:
-                if fnmatch.fnmatch(rel_path, pattern):
-                    is_included = is_negated
+            logger.debug(f"Excluding file {rel_path}")
 
-            if not is_included:
-                logger.debug(f"Excluding file {rel_path} (matched exclude pattern)")
-            return is_included
+        return is_included
 
     def collect_files(self) -> List[Path]:
         """Collect all files based on current configuration."""

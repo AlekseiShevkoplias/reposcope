@@ -7,11 +7,18 @@ wheels/
 *.egg-info
 .pytest_cache
 
+# Pytest
+.coverage
+htmlcov/
+
 # Virtual environments
 .venv
+env/
+venv/
 
 # Git
 .git
 
 # Data
 *.txt
+context.txt

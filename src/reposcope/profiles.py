@@ -116,8 +116,10 @@ class ProfileManager:
             try:
                 if tmp_file.exists():
                     tmp_file.unlink()
-            except:
-                pass  # Ignore cleanup errors
+            except Exception as cleanup_exception:
+                logger.warning(
+                    f"Failed to clean up temporary file: {cleanup_exception}"
+                )  # Ignore but make a note in the log
             raise ProfileError(f"Failed to save profiles: {e}")
 
     def create(self, name, mode):
