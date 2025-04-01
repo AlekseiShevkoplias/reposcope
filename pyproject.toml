@@ -1,10 +1,10 @@
 [project]
 name = "reposcope"
-version = "0.3.3"
+version = "0.3.4"
 description = "Collect repository files into a single document for easy sharing with AI assistants"
 readme = "README.md"
 authors = [
-    { name = "AlekseiShevkoplias", email = "shevshelles@gmail.com" }
+    { name = "AlekseiShevkoplias", email = "shevshelles@gmail.com"}
 ]
 requires-python = ">=3.9"
 dependencies = []
@@ -36,5 +36,6 @@ build-backend = "hatchling.build"
 [project.optional-dependencies]
 dev = [
     "pytest>=8.3.4",
-    "pytest-cov>=6.0.0"
+    "pytest-cov>=6.0.0",
+    "ruff>=0.9.3"
 ]
