@@ -2,6 +2,7 @@
 
 [![PyPI version](https://badge.fury.io/py/reposcope.svg)](https://pypi.org/project/reposcope/) 
 [![GitHub](https://img.shields.io/github/license/AlekseiShevkoplias/reposcope)](https://github.com/AlekseiShevkoplias/reposcope/blob/main/LICENSE)
+[![PyPI Downloads](https://static.pepy.tech/badge/reposcope)](https://pepy.tech/projects/reposcope)
 
 # RepoScope
 
